@@ -21,7 +21,11 @@ joint_file2 <- pidfile %>%
   # filter(Drop.Out. == "YES") #10 Dropouts, with only one providing a sample at baseline
   filter(!is.na(SamplingDt)) # Keep only IDs with an available sample
 
+<<<<<<< HEAD
 # Identify PIDs with only one serum-sample (n=3)
+=======
+# Identify PIDs with only one sample (n=3)
+>>>>>>> 303117f00d575e22a001c33449b824c352460c58
 joint_file2 %>% 
   group_by(PID) %>% 
   arrange(PID, SamplingDt) %>% 
@@ -29,7 +33,11 @@ joint_file2 %>%
   select(PID, Pat.ID, CryotubeID, SamplingDt, Day.0, Day.7, Day.28., Drop.Out.,Sampling_number) %>%
   arrange(PID, Sampling_number) %>% 
   slice_tail() %>% 
+<<<<<<< HEAD
   filter(Sampling_number == 1) %>%  # FluV_CO_041, FluV_MS_024, FluV_HIV_027 (DropOUT)
+=======
+  filter(Sampling_number == 1) %>%  # FluV_CO_041, FluV_MS_024, FluV_HIV_027(DropOUT)
+>>>>>>> 303117f00d575e22a001c33449b824c352460c58
   ungroup() 
 
   
