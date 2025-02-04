@@ -1,11 +1,13 @@
 #load libraries
 library(dplyr)
 library(tidyr)
-
+library(haven)
+library(here)
 
 #Import data (PROVISORISCH)
-send_items <- read.csv2("/Users/lu/Desktop/Home/DS5752_VersandUK_Serum_2025-01.csv")
-pidfile <- read.csv2("//Users/lu/Desktop/Home/FluVacc_PIDs.csv")
+send_items <- read.csv2("data/provisorisch/DS5752_VersandUK_Serum_2025-01.csv")
+pidfile <- read.csv2("data/provisorisch/FluVacc_PIDs.csv")
+basefile <- read.csv2("data/provisorisch/IMVASU2_DATA_2025-02-04_0848.csv")
 
 #Create PID-file with Serum samples for later HAI/Microneut.-Results
 joint_file <- send_items %>% #148 Subjects
@@ -32,7 +34,25 @@ joint_file2 %>%
   filter(Sampling_number == 1) %>%  # FluV_CO_041, FluV_MS_024, FluV_HIV_027(DropOUT)
   ungroup() 
 
-# PBMC analysis
+# Create list for Francis Crick with age group etc.
+basefile_select <- basefile %>% 
+  select(study_id, redcap_event_name, gen_sex, gen_age, sv1_studygroup) %>% 
+  group_by(study_id) %>% 
+  arrange(redcap_event_name) %>% 
+  slice_head() %>% 
+  ungroup() %>% 
+  mutate(Pat.ID = study_id) %>% 
+  mutate(study_group = case_when(sv1_studygroup == 1 ~ "control",
+                                 sv1_studygroup == 2 ~ "onco",
+                                 sv1_studygroup == 3 ~ "ms",
+                                 sv1_studygroup == 4 ~ "hiv",
+                                 sv1_studygroup == 5 ~ "reheuma")) %>% 
+  mutate(age_group = case_when(gen_age <= 64 ~ "<65",
+                               gen_age >= 64 ~ "≥65"))
+  left_join(pidfile, join_by(Pat.ID))
+
+
+################ PBMC analysis
 send_items_pbmc <- read.csv2("/Users/lu/Desktop/Home/PBMCs_forSend.csv") 
 
 joint_file_pbmc <- pidfile %>% #148 -> correct
