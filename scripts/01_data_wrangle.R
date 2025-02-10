@@ -64,9 +64,9 @@ FluVac_HAI_Samples_ext_02_25 <-  joint_file %>%
   group_by(PID) %>%
   arrange(PID, SamplingDt) %>% 
   mutate(date_diff = as.numeric(SamplingDt - lag(SamplingDt))) %>% #calculate days between sample 1 and 3
-  mutate(PID = cur_group_id()) %>%
+  mutate(syntheticID = cur_group_id()) %>% 
   ungroup() %>% 
-  select(Studyname, Requestid, RackID, Position, CryotubeID, Material, Storage, Sampling_number, study_group, age_group, date_diff) %>% 
+  select(Studyname, Requestid, RackID, Position, CryotubeID, Material, Storage, syntheticID, Sampling_number, study_group, age_group, date_diff) %>% 
   print()
 
 
