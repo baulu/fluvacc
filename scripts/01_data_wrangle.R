@@ -130,9 +130,30 @@ PBMC_aliquotNR <- biobank_report_sum %>%
   mutate(combined = str_c(n, " (", round(percent, 1), "%)")) %>% 
   select(VisitNR, aliquotsPerVis, combined) %>% 
   pivot_wider(names_from = aliquotsPerVis, values_from = combined) %>% 
-  select(Visit_NR = VisitNR, One_Aliquote = "1", Two_Aliquotes = "2", Three_Aliquotes = "3", Four_Aliquotes = "4")
+  select(Visit_NR = VisitNR, One_Aliquote = "1", Two_Aliquotes = "2", Three_Aliquotes = "3", Four_Aliquotes = "4") %>% 
+  mutate(Visit_NR = as.character(Visit_NR))
 
-write.xlsx(PBMC_aliquotNR, file="processed/PBMC_aliquotNR.xlsx", overwrite = TRUE, asTable = TRUE)
+#Nr. of Patients with only 1 or two PBMC-aliquots at V1 and/or 3
+PBMC_aliquotNR_min <- biobank_report_sum %>% 
+  filter(Cryo.Sampletype == "PBMC") %>% 
+  filter(VisitNR == 1 | VisitNR == 3) %>% 
+  group_by(Primary.PID) %>% 
+  arrange(Primary.PID, aliquotsPerVis) %>% 
+  slice_head() %>% 
+  ungroup() %>% 
+  count(aliquotsPerVis) %>% 
+  mutate(percent = n / sum(n) * 100) %>% 
+  mutate(combined = str_c(n, " (", round(percent, 1), "%)")) %>% 
+  select(aliquotsPerVis, combined) %>% 
+  pivot_wider(names_from = aliquotsPerVis, values_from = combined) %>% 
+  mutate(Visit_NR = "minimalAliquot (Only Visit 1&3)") %>% 
+  select(Visit_NR, One_Aliquote = `1`, Two_Aliquotes = `2`, Three_Aliquotes = `3`, Four_Aliquotes = `4`) %>% 
+  mutate(across(everything(), as.character))  # Convert all variables to character
+
+PBMC_aliquotNR_comb <- PBMC_aliquotNR %>% 
+  bind_rows(PBMC_aliquotNR_min)
+
+write.xlsx(PBMC_aliquotNR_comb, file="processed/PBMC_aliquotNR.xlsx", overwrite = TRUE, asTable = TRUE)
 
 
 #Serum Nr. of Aliquots per Visit
