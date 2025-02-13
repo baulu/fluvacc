@@ -135,10 +135,18 @@ PBMC_aliquotNR <- biobank_report_sum %>%
 write.xlsx(PBMC_aliquotNR, file="processed/PBMC_aliquotNR.xlsx", overwrite = TRUE, asTable = TRUE)
 
 
-biobank_report_sum %>% 
+#Serum Nr. of Aliquots per Visit
+Serum_aliquotNR <- biobank_report_sum %>% 
   filter(Cryo.Sampletype == "Serum") %>% 
   filter(VisitNR <= 3) %>% 
   count(VisitNR, aliquotsPerVis, Cryo.Sampletype) %>% 
   group_by(VisitNR) %>% 
   mutate(percent = n / sum(n) * 100) %>% 
-  ungroup()
+  ungroup() %>% 
+  mutate(combined = str_c(n, " (", round(percent, 1), "%)")) %>% 
+  select(VisitNR, aliquotsPerVis, combined) %>% 
+  pivot_wider(names_from = aliquotsPerVis, values_from = combined) %>% 
+  select(Visit_NR = VisitNR, One_Aliquote = "1", Two_Aliquotes = "2", Three_Aliquotes = "3")
+
+write.xlsx(Serum_aliquotNR, file="processed/Serum_aliquotNR.xlsx", overwrite = TRUE, asTable = TRUE)
+
