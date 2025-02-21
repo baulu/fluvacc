@@ -7,13 +7,19 @@ library(lubridate)
 library (openxlsx)
 library(ggplot2)
 library(stringr)
+library(readr)
 
 #Import data (PROVISORISCH)
-send_items <- read.csv2("data/provisorisch/DS5752_VersandUK_Serum_2025-01.csv") %>% 
+send_items <- read_csv2("data/provisorisch/DS5752_VersandUK_Serum_2025-01.csv") %>% 
   mutate(SamplingDt = dmy(SamplingDt))
-pidfile <- read.csv2("data/provisorisch/FluVacc_PIDs.csv")
-basefile <- read.csv2("data/provisorisch/IMVASU2_DATA_2025-02-04_0848.csv")
-biobank_report <- read.csv2("data/provisorisch/Report Study 5752 - FluVacc2025-02-03.csv") 
+pidfile <- read_csv2("data/provisorisch/FluVacc_PIDs.csv")
+basefile <- read_csv2("data/provisorisch/IMVASU2_DATA_2025-02-04_0848.csv")
+biobank_report <- read.csv2("data/provisorisch/Report Study 5752 - FluVacc2025-02-03.csv")# %>% 
+  filter(Cryo.Barcode != "FD31518743" & Cryo.Barcode != "FD31518744" & Cryo.Barcode !="FD31518757" & Cryo.Barcode !="FD31518758")# Exlude for empty tubes for FluV_CO_32
+microneut_results_raw <- read_csv("data/final_results_microneut_2025-02-20_FluVacc.csv") %>% 
+  mutate(CryotubeID = sample_barcode)
+
+
 
 #Create PID-file with Serum samples for later HAI/Microneut.-Results
 joint_file <- send_items %>% #148 Subjects
@@ -170,4 +176,22 @@ Serum_aliquotNR <- biobank_report_sum %>%
   select(Visit_NR = VisitNR, One_Aliquote = "1", Two_Aliquotes = "2", Three_Aliquotes = "3")
 
 write.xlsx(Serum_aliquotNR, file="processed/Serum_aliquotNR.xlsx", overwrite = TRUE, asTable = TRUE)
+
+#### Looking at Microneutralisation data------------------------------------------------
+## combining files
+microneut_combined <- joint_file %>%
+  left_join(microneut_results_raw, join_by(CryotubeID))
+
+## raw first look at data
+microneut_analysis_raw <- microneut_combined %>% 
+  select(PID, CryotubeID, Pat_ID =`Pat-ID`, SamplingDt, Sampling_number, FluA_H1_ic50 = `FluA/H1_ic50`, FluA_H3_ic50 = `FluA/H3_ic50`,FluA_Vic_ic50 = `FluB/Vic_ic50`) %>% 
+  arrange(Pat_ID, PID, Sampling_number) %>% 
+  group_by(PID) %>% 
+  mutate(FluV_H1_fold = FluA_H1_ic50 / lag(FluA_H1_ic50)) %>%
+  mutate(FluV_H3_fold = FluA_H3_ic50 / lag(FluA_H3_ic50)) %>%
+  mutate(FluV_Vic_fold = FluA_Vic_ic50 / lag(FluA_Vic_ic50)) %>%
+  ungroup() %>% 
+  print()
+
+write.xlsx(microneut_analysis_raw, file="processed/microneut_analysis_raw.xlsx", overwrite = TRUE, asTable = TRUE)
 
