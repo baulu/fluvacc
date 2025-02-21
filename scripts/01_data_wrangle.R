@@ -191,7 +191,41 @@ microneut_analysis_raw <- microneut_combined %>%
   mutate(FluV_H3_fold = FluA_H3_ic50 / lag(FluA_H3_ic50)) %>%
   mutate(FluV_Vic_fold = FluA_Vic_ic50 / lag(FluA_Vic_ic50)) %>%
   ungroup() %>% 
+  mutate(pat_group = case_when(
+    str_detect(Pat_ID, "CO")  ~ "Control",
+    str_detect(Pat_ID, "HIV") ~ "HIV",
+    str_detect(Pat_ID, "MS") ~ "MS", 
+    str_detect(Pat_ID, "ONK") ~ "ONK",
+    str_detect(Pat_ID, "RH") ~ "RH", # Example: add more conditions
+    TRUE ~ "Pat_ID" # Default: Assigns NA if no match 
+  )) %>% 
+  mutate(H1_ov4 = FluV_H1_fold > 4) %>%  
+  mutate(H3_ov4 = FluV_H3_fold > 4) %>%  
+  mutate(Vic_ov4 = FluV_Vic_fold > 4) %>%  
   print()
 
+micneut_vic <- microneut_analysis_raw %>% 
+  group_by(pat_group) %>% 
+  count(Vic_ov4) %>% filter(!is.na(Vic_ov4))%>% 
+  select(pat_group, Over4 = Vic_ov4, Vic = n) %>% 
+  print()
+
+micneut_H1 <- microneut_analysis_raw %>% 
+  group_by(pat_group) %>% 
+  count(H1_ov4) %>% filter(!is.na(H1_ov4))%>% 
+  select(pat_group, Over4 = H1_ov4, H1 = n) %>% 
+  print()
+
+micneut_H3 <- microneut_analysis_raw %>% 
+  group_by(pat_group) %>% 
+  count(H3_ov4) %>% filter(!is.na(H3_ov4))%>% 
+  select(pat_group, Over4 = H3_ov4, H3 = n) %>% 
+  print()
+
+micneut_foldoverview <- micneut_vic %>% 
+  left_join(micneut_H1) %>% 
+  left_join(micneut_H3)
+
 write.xlsx(microneut_analysis_raw, file="processed/microneut_analysis_raw.xlsx", overwrite = TRUE, asTable = TRUE)
+write.xlsx(micneut_foldoverview, file="processed/micneut_foldoverview.xlsx", overwrite = TRUE, asTable = TRUE)
 
