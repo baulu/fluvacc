@@ -199,11 +199,13 @@ microneut_analysis_raw <- microneut_combined %>%
     str_detect(Pat_ID, "RH") ~ "RH", # Example: add more conditions
     TRUE ~ "Pat_ID" # Default: Assigns NA if no match 
   )) %>% 
-  mutate(H1_ov4 = FluV_H1_fold > 4) %>%  
-  mutate(H3_ov4 = FluV_H3_fold > 4) %>%  
-  mutate(Vic_ov4 = FluV_Vic_fold > 4) %>%  
+  #mutate(H1_ov4 = FluV_H1_fold > 4) %>%  
+  #mutate(H3_ov4 = FluV_H3_fold > 4) %>%  
+  #mutate(Vic_ov4 = FluV_Vic_fold > 4) %>%  
+  select(PID, CryotubeID, Pat_ID, pat_group, SamplingDt, Sampling_number, FluA_H1_ic50, FluA_H3_ic50, FluA_Vic_ic50, FluV_H1_fold,FluV_H3_fold,FluV_Vic_fold) %>% 
   print()
 
+#show percentage with foldchange >4x per group
 micneut_vic <- microneut_analysis_raw %>% 
   group_by(pat_group) %>% 
   count(Vic_ov4) %>% filter(!is.na(Vic_ov4))%>% 
@@ -226,6 +228,19 @@ micneut_foldoverview <- micneut_vic %>%
   left_join(micneut_H1) %>% 
   left_join(micneut_H3)
 
+# Write files
 write.xlsx(microneut_analysis_raw, file="processed/microneut_analysis_raw.xlsx", overwrite = TRUE, asTable = TRUE)
 write.xlsx(micneut_foldoverview, file="processed/micneut_foldoverview.xlsx", overwrite = TRUE, asTable = TRUE)
+
+### Some look at the data
+
+microneut_analysis_raw %>% 
+  #replace Non-inhibition values (=NA) with 39
+  mutate(across(c(FluA_H1_ic50, FluA_H3_ic50, FluA_Vic_ic50), ~ ifelse(is.na(.), 39, .))) %>% 
+  ggplot() +
+  geom_jitter(
+    aes(x = Sampling_number, y = FluA_Vic_ic50)) +
+    theme_classic()
+
+
 
