@@ -20,8 +20,7 @@ microneut_analysis_raw  <- read.xlsx("processed/microneut_analysis_raw.xlsx")
 #preparation
 microneut_analysis_raw_p <- microneut_analysis_raw %>% 
   select(pat_group, Sampling_number, H1 = FluA_H1_ic50, H3 = FluA_H3_ic50, Vic = FluA_Vic_ic50) %>% 
-  pivot_longer(cols = 3:5, names_to = "strain", values_to = "ic50") %>%
-  mutate(across(c(ic50), ~ ifelse(is.na(.), 39, .)))  
+  pivot_longer(cols = 3:5, names_to = "strain", values_to = "ic50")  
 
 plot_h1_wide <- microneut_analysis_raw_p %>% 
   select(pat_group, strain, Sampling_number, ic50) %>% 
@@ -115,7 +114,6 @@ plot_co <- microneut_analysis_raw %>%
 plot_hiv <- microneut_analysis_raw %>% 
   select(pat_group, Sampling_number, H1 = FluA_H1_ic50, H3 = FluA_H3_ic50, Vic = FluA_Vic_ic50) %>% 
   pivot_longer(cols = 3:5, names_to = "strain", values_to = "ic50") %>%
-  mutate(across(c(ic50), ~ ifelse(is.na(.), 39, .))) %>%
   filter(pat_group == "HIV") %>% 
   ggplot(aes(x = factor(Sampling_number), y = ic50, fill = factor(Sampling_number))) +  # Factorize Sampling_number for distinct boxplots
   geom_boxplot(outlier.shape = NA, alpha = 0) +  # Boxplot with transparency
@@ -138,7 +136,6 @@ plot_hiv <- microneut_analysis_raw %>%
 plot_rh <- microneut_analysis_raw %>% 
   select(pat_group, Sampling_number, H1 = FluA_H1_ic50, H3 = FluA_H3_ic50, Vic = FluA_Vic_ic50) %>% 
   pivot_longer(cols = 3:5, names_to = "strain", values_to = "ic50") %>%
-  mutate(across(c(ic50), ~ ifelse(is.na(.), 39, .))) %>%
   filter(pat_group == "RH") %>% 
   ggplot(aes(x = factor(Sampling_number), y = ic50, fill = factor(Sampling_number))) +  # Factorize Sampling_number for distinct boxplots
   geom_boxplot(outlier.shape = NA, alpha = 0) +  # Boxplot with transparency
@@ -160,7 +157,6 @@ plot_rh <- microneut_analysis_raw %>%
 plot_ms <- microneut_analysis_raw %>% 
   select(pat_group, Sampling_number, H1 = FluA_H1_ic50, H3 = FluA_H3_ic50, Vic = FluA_Vic_ic50) %>% 
   pivot_longer(cols = 3:5, names_to = "strain", values_to = "ic50") %>%
-  mutate(across(c(ic50), ~ ifelse(is.na(.), 39, .))) %>%
   filter(pat_group == "MS") %>% 
   ggplot(aes(x = factor(Sampling_number), y = ic50, fill = factor(Sampling_number))) +  # Factorize Sampling_number for distinct boxplots
   geom_boxplot(outlier.shape = NA, alpha = 0) +  # Boxplot with transparency
@@ -182,7 +178,6 @@ plot_ms <- microneut_analysis_raw %>%
 plot_onc <- microneut_analysis_raw %>% 
   select(pat_group, Sampling_number, H1 = FluA_H1_ic50, H3 = FluA_H3_ic50, Vic = FluA_Vic_ic50) %>% 
   pivot_longer(cols = 3:5, names_to = "strain", values_to = "ic50") %>%
-  mutate(across(c(ic50), ~ ifelse(is.na(.), 39, .))) %>%
   filter(pat_group == "ONK") %>% 
   ggplot(aes(x = factor(Sampling_number), y = ic50, fill = factor(Sampling_number))) +  # Factorize Sampling_number for distinct boxplots
   geom_boxplot(outlier.shape = NA, alpha = 0) +  # Boxplot with transparency
@@ -258,6 +253,8 @@ microneut_analysis_raw %>%
 ### regression nach invers. baseline titer (fold change ln2 transformieren vorher und anschl, 2summieren, vgl.pnk-paper)
 ### adjusten unf auf MEdian baselinetiter (vgl. hirzel neurofilament paper)
 
+#####put together dataset with fold changes and baseline titer for all strains
+#h1
 h1_base <-  microneut_analysis_raw %>%
     filter(Sampling_number == 1) %>% 
     select(PID, H1_baseline = FluA_H1_ic50)
@@ -268,16 +265,38 @@ h1_fold <-  microneut_analysis_raw %>%
   
 hi1_foldbase <- h1_base %>% 
   left_join(h1_fold) %>% 
-  mutate(H1_fold_ln2 = log2(H1_fold))  %>% 
-  mutate(H1_fold_ln10 = log(H1_fold))  %>% 
+  mutate(H1_fold_log2 = log2(H1_fold))  %>% 
+  mutate(H1_fold_log10 = log(H1_fold))  %>% 
   as_tibble()
 
 hi1_foldbase %>% 
-  ggplot(aes(x = H1_baseline, y = H1_fold_ln10)) +
+  ggplot(aes(x = H1_baseline, y = H1_fold_log2)) +
   geom_point() +
   geom_smooth(method = "lm", se = TRUE) +  # Add regression line with confidence interval
   scale_x_continuous(limits = c(0, 13000)) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "red") +  # Add horizontal line
   theme_minimal()
 
+#h3
+h3_base <-  microneut_analysis_raw %>%
+  filter(Sampling_number == 1) %>% 
+  select(PID, H3_baseline = FluA_H3_ic50)
+
+h3_fold <-  microneut_analysis_raw %>%
+  filter(Sampling_number == 2) %>% 
+  select(PID, H3_fold = FluV_H3_fold)
+
+hi3_foldbase <- h3_base %>% 
+  left_join(h3_fold) %>% 
+  mutate(H3_fold_log2 = log2(H3_fold))  %>% 
+  mutate(H3_fold_log10 = log(H3_fold))  %>% 
+  as_tibble()
+
+hi3_foldbase %>% 
+  ggplot(aes(x = H3_baseline, y = H3_fold_log2)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE) +  # Add regression line with confidence interval
+  #scale_x_continuous(limits = c(0, 13000)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +  # Add horizontal line
+  theme_minimal()
 
