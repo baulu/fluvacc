@@ -87,8 +87,8 @@ basefile_noPID <- basefile_withPID %>%
   select(patient_id, gen_sex, gen_age, age_group, study_group, visit1, visit2, visit3)
 
 
-write.xlsx(basefile_withPID, file="processed/FluVac_basefile_withPID", overwrite = TRUE, asTable = TRUE)
-write.xlsx(basefile_noPID, file="processed/FluVac_basefile_noPID", overwrite = TRUE, asTable = TRUE)
+write.xlsx(basefile_withPID, file="processed/FluVac_basefile_withPID.xlsx", overwrite = TRUE, asTable = TRUE)
+write.xlsx(basefile_noPID, file="processed/FluVac_basefile_noPID.xlsx", overwrite = TRUE, asTable = TRUE)
 
 
 
