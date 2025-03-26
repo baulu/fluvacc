@@ -11,11 +11,18 @@ library(readr)
 library(scales)
 library(patchwork)
 
+#### Important Files (26.03.2025)
+# basefile_withPID - line 62, metadate including PID (CAVE)
+# basefile_noPID - line 86, metadate without PID 
+
+
 #Import data (PROVISORISCH)
+basefile_nodropout <- read_csv2("data/provisorisch/IMVASU2_DATA_2025-02-04_0848.csv") %>% 
+  filter(study_id != "FluV_HIV_027") # Exlude one Drop-out
+pidfile <- read_csv2("data/provisorisch/FluVacc_PIDs.csv") %>% 
+  mutate(patient_id = as.character(`Pat-ID`))
 send_items <- read_csv2("data/provisorisch/DS5752_VersandUK_Serum_2025-01.csv") %>% 
   mutate(SamplingDt = dmy(SamplingDt))
-pidfile <- read_csv2("data/provisorisch/FluVacc_PIDs.csv")
-basefile <- read_csv2("data/provisorisch/IMVASU2_DATA_2025-02-04_0848.csv")
 biobank_report <- read.csv2("data/provisorisch/Report Study 5752 - FluVacc2025-02-03.csv")# %>% 
   filter(Cryo.Barcode != "FD31518743" & Cryo.Barcode != "FD31518744" & Cryo.Barcode !="FD31518757" & Cryo.Barcode !="FD31518758")# Exlude for empty tubes for FluV_CO_32
 microneut_results_raw <- read_csv("data/final_results_microneut_2025-02-20_FluVacc.csv") %>% 
@@ -25,9 +32,6 @@ microneut_results_raw <- read_csv("data/final_results_microneut_2025-02-20_FluVa
   mutate(across(c(`FluB/Vic_ic50`), ~ ifelse(is.na(.), 39, .))) 
   
 
-
-
-
 #Create PID-file with Serum samples for later HAI/Microneut.-Results
 joint_file <- send_items %>% #148 Subjects
   mutate(PID = Subject) %>% 
@@ -36,13 +40,14 @@ joint_file <- send_items %>% #148 Subjects
   group_by(PID) %>% 
   arrange(PID, SamplingDt) %>% 
   mutate(Sampling_number = row_number()) %>%
-  ungroup()
+  ungroup() %>% 
+  mutate(patient_id = 'Pat-ID')
 
 joint_file2 <- pidfile %>% #156 inclusions (with 9 drop-outs and 1 drop-out with sample at baseline = 147 of send_items list)
   mutate(Subject = PID) %>% 
   left_join(send_items, by = join_by(Subject)) %>% 
   mutate(PID = Subject) %>% 
-  select(PID, Pat.ID, Position, CryotubeID, SamplingDt, Day.0, Day.7, Day.28., Drop.Out.) %>%
+  select(PID, "Pat-ID", Position, CryotubeID, SamplingDt, "Day.0", "Day.7", "Day 28\n", "Drop-Out?") %>%
   # filter(Drop.Out. == "YES") #10 Dropouts, with only one providing a sample at baseline
   filter(!is.na(SamplingDt)) # Keep only IDs with an available sample
 
@@ -57,26 +62,39 @@ joint_file2 %>%
   filter(Sampling_number == 1) %>%  # FluV_CO_041, FluV_MS_024, FluV_HIV_027(DropOUT)
   ungroup() 
 
-##### Create list for Francis Crick with age group etc.
-# patient characteristics file
-basefile_select <- basefile %>% 
+##### Create file with metadata/patient characteristics
+basefile_withPID<- basefile_nodropout %>% 
   select(study_id, redcap_event_name, gen_sex, gen_age, sv1_studygroup) %>% 
   group_by(study_id) %>% 
   arrange(redcap_event_name) %>% 
   slice_head() %>% 
   ungroup() %>% 
-  mutate(Pat.ID = study_id) %>% 
+  mutate(patient_id = study_id) %>% 
   mutate(study_group = case_when(sv1_studygroup == 1 ~ "control",
                                  sv1_studygroup == 2 ~ "onco",
                                  sv1_studygroup == 3 ~ "ms",
                                  sv1_studygroup == 4 ~ "hiv",
                                  sv1_studygroup == 5 ~ "reheuma")) %>% 
   mutate(age_group = case_when(gen_age <= 64 ~ "<65",
-                               gen_age >= 64 ~ "≥65"))
+                               gen_age >= 64 ~ "≥65")) %>% 
+  left_join(pidfile) %>% 
+  mutate(v1 = dmy(`Day 0`)) %>% 
+  mutate(v2 = dmy(`Day 7`)) %>% 
+  mutate(v3 = dmy(`Day 28\n`)) %>% 
+  select(patient_id, PID, gen_sex, gen_age, age_group, study_group, visit1 = v1, visit2 =  v2, visit3 = v3)
   
+basefile_noPID <- basefile_withPID %>% 
+  select(patient_id, gen_sex, gen_age, age_group, study_group, visit1, visit2, visit3)
+
+
+write.xlsx(basefile_withPID, file="processed/FluVac_basefile_withPID", overwrite = TRUE, asTable = TRUE)
+write.xlsx(basefile_noPID, file="processed/FluVac_basefile_noPID", overwrite = TRUE, asTable = TRUE)
+
+
+
 #append patient characteristics to sent-file for Crick institute
 FluVac_HAI_Samples_ext_02_25 <-  joint_file %>% 
-  left_join(basefile_select, join_by(Pat.ID)) %>% 
+  left_join(basefile_withPID, join_by(PID)) %>% 
   group_by(PID) %>%
   arrange(PID, SamplingDt) %>% 
   mutate(date_diff = as.numeric(SamplingDt - lag(SamplingDt))) %>% #calculate days between sample 1 and 3
