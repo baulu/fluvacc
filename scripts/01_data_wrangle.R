@@ -30,6 +30,7 @@ microneut_results_raw <- read_csv("data/final_results_microneut_2025-02-20_FluVa
   mutate(across(c(`FluA/H1_ic50`), ~ ifelse(is.na(.), 39, .))) %>% #replace NAs in IC50 for samples with no inhibition to 39 (minimal dilution is 1:40)
   mutate(across(c(`FluA/H3_ic50`), ~ ifelse(is.na(.), 39, .))) %>% 
   mutate(across(c(`FluB/Vic_ic50`), ~ ifelse(is.na(.), 39, .))) 
+hai_results_raw <- read_csv2("data/FluVacc_HAI_samples_QRcodes.csv")
   
 
 #Create PID-file with Serum samples for later HAI/Microneut.-Results
@@ -64,7 +65,7 @@ joint_file2 %>%
 
 ##### Create file with metadata/patient characteristics
 basefile_withPID<- basefile_nodropout %>% 
-  select(study_id, redcap_event_name, gen_sex, gen_age, sv1_studygroup) %>% 
+  select(study_id, redcap_event_name, sv1_studygroup, gen_sex, gen_age, gen_weight, gen_height, cci_sumval, cci_10y_survival, hist_splen, hist_priorimmuno, hist_prioim_start, hist_prioim_stop, hist_priorim_txt, hist_prioim_sct, hist_priorim_sterodays, infl_vacc, infl_vacc_first, infl_previoussevere, onc_year, onc_diagn, onc_lymptype, onc_otherlymph, onc_car_t_product, onc_infdate,  ) %>% 
   group_by(study_id) %>% 
   arrange(redcap_event_name) %>% 
   slice_head() %>% 
@@ -201,6 +202,38 @@ Serum_aliquotNR <- biobank_report_sum %>%
   select(Visit_NR = VisitNR, One_Aliquote = "1", Two_Aliquotes = "2", Three_Aliquotes = "3")
 
 write.xlsx(Serum_aliquotNR, file="processed/Serum_aliquotNR.xlsx", overwrite = TRUE, asTable = TRUE)
+
+#### Looking at HAI data------------------------------------------------
+## combining files
+hai_combined <- joint_file %>%
+  select(PID, SamplingDt,Sampling_number, CryotubeID, Pat_ID =`Pat-ID`) %>% 
+  left_join(hai_results_raw, join_by(CryotubeID)) 
+
+## raw first look at data
+hai_analysis_raw <- hai_combined %>% 
+  select(PID, CryotubeID, Pat_ID, SamplingDt, Sampling_number, H1N1, H3N2 , BVic = `B Victoria`, BYam = `B Yamagata`) %>% 
+  arrange(Pat_ID, PID, Sampling_number) %>% 
+  #mutate(across(c(H1N1, H3N2, BVic, BYam ), ~ ifelse(. == "<", 9, .))) %>% 
+  mutate(across(c(H1N1, H3N2, BVic, BYam), ~ as.numeric(gsub("<.*", "9", .)))) %>% 
+  group_by(PID) %>% 
+  mutate(hai_H1_fold = H1N1 / lag(H1N1)) %>%
+  mutate(hai_H3_fold = H3N2 / lag(H3N2)) %>%
+  mutate(hai_BVic_fold = BVic / lag(BVic)) %>%
+  mutate(hai_BYam_fold = BYam / lag(BYam)) %>% 
+  ungroup() %>% 
+  mutate(pat_group = case_when(
+    str_detect(Pat_ID, "CO")  ~ "Control",
+    str_detect(Pat_ID, "HIV") ~ "HIV",
+    str_detect(Pat_ID, "MS") ~ "MS", 
+    str_detect(Pat_ID, "ONK") ~ "ONK",
+    str_detect(Pat_ID, "RH") ~ "RH", # Example: add more conditions
+    TRUE ~ "Pat_ID" # Default: Assigns NA if no match 
+  )) %>% print()
+
+# Write files
+write.xlsx(hai_analysis_raw, file="processed/hai_analysis_raw.xlsx", overwrite = TRUE, asTable = TRUE)
+  
+
 
 #### Looking at Microneutralisation data------------------------------------------------
 ## combining files
