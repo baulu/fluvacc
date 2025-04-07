@@ -1,3 +1,20 @@
+####Index
+# 1) Load Data
+# 2) ID-File with PID and Cryotube IDs 
+    # "joint_file"
+# 3) File with Metadata 
+    # "basefile_withPID"
+    # "basefile_noPID"
+# 4) Metadata file for Francis Crick
+# 5) Analysis of PBMC samples in Biobank
+# 6) HAI Dataset 
+    # "hai_analysis_raw"
+# 7) Microneutralisation dataset
+    # "microneut_analysis_raw"
+    # "micneut_foldoverview"
+# 8) Combined Dataset for INFLUENZA ANTIBODYS
+    # "influenza_antibody_results"
+
 #load libraries
 library(dplyr)
 library(tidyr)
@@ -16,7 +33,7 @@ library(patchwork)
 # basefile_noPID - line 86, metadate without PID 
 
 
-#Import data (PROVISORISCH)
+#1) Import data 
 basefile_nodropout <- read_csv2("data/provisorisch/IMVASU2_DATA_2025-02-04_0848.csv") %>% 
   filter(study_id != "FluV_HIV_027") # Exlude one Drop-out
 pidfile <- read_csv2("data/provisorisch/FluVacc_PIDs.csv") %>% 
@@ -24,16 +41,17 @@ pidfile <- read_csv2("data/provisorisch/FluVacc_PIDs.csv") %>%
 send_items <- read_csv2("data/provisorisch/DS5752_VersandUK_Serum_2025-01.csv") %>% 
   mutate(SamplingDt = dmy(SamplingDt))
 biobank_report <- read.csv2("data/provisorisch/Report Study 5752 - FluVacc2025-02-03.csv")# %>% 
-  filter(Cryo.Barcode != "FD31518743" & Cryo.Barcode != "FD31518744" & Cryo.Barcode !="FD31518757" & Cryo.Barcode !="FD31518758")# Exlude for empty tubes for FluV_CO_32
+#  filter(Cryo.Barcode != "FD31518743" & Cryo.Barcode != "FD31518744" & Cryo.Barcode !="FD31518757" & Cryo.Barcode !="FD31518758")# Exlude for empty tubes for FluV_CO_32
 microneut_results_raw <- read_csv("data/final_results_microneut_2025-02-20_FluVacc.csv") %>% 
   mutate(CryotubeID = sample_barcode) %>% 
   mutate(across(c(`FluA/H1_ic50`), ~ ifelse(is.na(.), 39, .))) %>% #replace NAs in IC50 for samples with no inhibition to 39 (minimal dilution is 1:40)
   mutate(across(c(`FluA/H3_ic50`), ~ ifelse(is.na(.), 39, .))) %>% 
   mutate(across(c(`FluB/Vic_ic50`), ~ ifelse(is.na(.), 39, .))) 
 hai_results_raw <- read_csv2("data/FluVacc_HAI_samples_QRcodes.csv")
-  
+send_items_pbmc <- read.csv2("data/provisorisch/PBMCs_forSend.csv") 
 
-#Create PID-file with Serum samples for later HAI/Microneut.-Results
+
+#2) Create PID-file with Serum samples for later HAI/Microneut.-Results
 joint_file <- send_items %>% #148 Subjects
   mutate(PID = Subject) %>% 
   select(PID, Studyname, Requestid, RackID, Position, CryotubeID, Material, Storage, SamplingDt) %>% 
@@ -44,26 +62,7 @@ joint_file <- send_items %>% #148 Subjects
   ungroup() %>% 
   mutate(patient_id = 'Pat-ID')
 
-joint_file2 <- pidfile %>% #156 inclusions (with 9 drop-outs and 1 drop-out with sample at baseline = 147 of send_items list)
-  mutate(Subject = PID) %>% 
-  left_join(send_items, by = join_by(Subject)) %>% 
-  mutate(PID = Subject) %>% 
-  select(PID, "Pat-ID", Position, CryotubeID, SamplingDt, "Day.0", "Day.7", "Day 28\n", "Drop-Out?") %>%
-  # filter(Drop.Out. == "YES") #10 Dropouts, with only one providing a sample at baseline
-  filter(!is.na(SamplingDt)) # Keep only IDs with an available sample
-
-# Identify PIDs with only one serum-sample (n=3)
-joint_file2 %>% 
-  group_by(PID) %>% 
-  arrange(PID, SamplingDt) %>% 
-  mutate(Sampling_number = row_number()) %>%
-  select(PID, Pat.ID, CryotubeID, SamplingDt, Day.0, Day.7, Day.28., Drop.Out.,Sampling_number) %>%
-  arrange(PID, Sampling_number) %>% 
-  slice_tail() %>% 
-  filter(Sampling_number == 1) %>%  # FluV_CO_041, FluV_MS_024, FluV_HIV_027(DropOUT)
-  ungroup() 
-
-##### Create file with metadata/patient characteristics
+#3) Create file with metadata/patient characteristics
 basefile_withPID<- basefile_nodropout %>% 
   select(study_id, redcap_event_name, sv1_studygroup, gen_sex, gen_age, gen_weight, gen_height, cci_sumval, cci_10y_survival, hist_splen, hist_priorimmuno, hist_prioim_start, hist_prioim_stop, hist_priorim_txt, hist_prioim_sct, hist_priorim_sterodays, infl_vacc, infl_vacc_first, infl_previoussevere, onc_year, onc_diagn, onc_lymptype, onc_otherlymph, onc_car_t_product, onc_infdate,  ) %>% 
   group_by(study_id) %>% 
@@ -93,7 +92,7 @@ write.xlsx(basefile_noPID, file="processed/FluVac_basefile_noPID.xlsx", overwrit
 
 
 
-#append patient characteristics to sent-file for Crick institute
+#4) append patient characteristics to sent-file for Crick institute
 FluVac_HAI_Samples_ext_02_25 <-  joint_file %>% 
   left_join(basefile_withPID, join_by(PID)) %>% 
   group_by(PID) %>%
@@ -107,14 +106,12 @@ FluVac_HAI_Samples_ext_02_25 <-  joint_file %>%
 
 write.xlsx(FluVac_HAI_Samples_ext_02_25, file="processed/FluVac_HAI_Samples_ext_02_25.xlsx", overwrite = TRUE, asTable = TRUE)
 
-################ PBMC analysis
-send_items_pbmc <- read.csv2("/Users/lu/Desktop/Home/PBMCs_forSend.csv") 
-
+#5) #########. PBMC analysis
 joint_file_pbmc <- pidfile %>% #148 -> correct
   mutate(Subject = PID) %>% 
   left_join(send_items_pbmc, by = join_by(Subject)) %>% 
   mutate(PID = Subject) %>% 
-  select(PID, Pat.ID, Timepoint.Check, LabScan, StorageDt, CryoID, SampleID, Status,Drop.Out.) %>% 
+  select(PID, Pat.ID = `Pat-ID`, Timepoint.Check, LabScan, StorageDt, CryoID, SampleID, Status) %>% 
   # filter(Drop.Out. == "YES") #10 Dropouts
   filter(!is.na(LabScan)) # Keep only IDs with an available sample
 
@@ -127,7 +124,6 @@ joint_file_pbmc %>%
   ungroup() 
   
 # Analysis of Samples - how many?
-
 biobank_report_sum <- biobank_report %>% 
   select(Primary.PID, Primary.Proband.ID, Lab.Scan.Dt, Lab.Order.ID, Cryo.Sampletype, Cryo.Barcode, Cryo.Volume.ul, Cryo.Status, Cryo.Storagestatus, Cryo.Concentration, Cryo.Concentrationunits) %>% 
   mutate(Lab.Scan.Dt = parse_date_time(Lab.Scan.Dt,  "mdYHMS")) %>% 
@@ -203,7 +199,7 @@ Serum_aliquotNR <- biobank_report_sum %>%
 
 write.xlsx(Serum_aliquotNR, file="processed/Serum_aliquotNR.xlsx", overwrite = TRUE, asTable = TRUE)
 
-#### Looking at HAI data------------------------------------------------
+#6) ############## Looking at HAI data------------------------------------------------
 ## combining files
 hai_combined <- joint_file %>%
   select(PID, SamplingDt,Sampling_number, CryotubeID, Pat_ID =`Pat-ID`) %>% 
@@ -213,8 +209,7 @@ hai_combined <- joint_file %>%
 hai_analysis_raw <- hai_combined %>% 
   select(PID, CryotubeID, Pat_ID, SamplingDt, Sampling_number, H1N1, H3N2 , BVic = `B Victoria`, BYam = `B Yamagata`) %>% 
   arrange(Pat_ID, PID, Sampling_number) %>% 
-  #mutate(across(c(H1N1, H3N2, BVic, BYam ), ~ ifelse(. == "<", 9, .))) %>% 
-  mutate(across(c(H1N1, H3N2, BVic, BYam), ~ as.numeric(gsub("<.*", "9", .)))) %>% 
+  mutate(across(c(H1N1, H3N2, BVic, BYam), ~ as.numeric(gsub("<.*", "5", .)))) %>% 
   group_by(PID) %>% 
   mutate(hai_H1_fold = H1N1 / lag(H1N1)) %>%
   mutate(hai_H3_fold = H3N2 / lag(H3N2)) %>%
@@ -232,8 +227,6 @@ hai_analysis_raw <- hai_combined %>%
 
 # Write files
 write.xlsx(hai_analysis_raw, file="processed/hai_analysis_raw.xlsx", overwrite = TRUE, asTable = TRUE)
-  
-
 
 #### Looking at Microneutralisation data------------------------------------------------
 ## combining files
@@ -264,31 +257,19 @@ microneut_analysis_raw <- microneut_combined %>%
   select(PID, CryotubeID, Pat_ID, pat_group, SamplingDt, Sampling_number, FluA_H1_ic50, FluA_H3_ic50, FluA_Vic_ic50, FluV_H1_fold,FluV_H3_fold,FluV_Vic_fold) %>% 
   print()
 
-#show percentage with foldchange >4x per group
-micneut_vic <- microneut_analysis_raw %>% 
-  group_by(pat_group) %>% 
-  count(Vic_ov4) %>% filter(!is.na(Vic_ov4))%>% 
-  select(pat_group, Over4 = Vic_ov4, Vic = n) %>% 
-  print()
-
-micneut_H1 <- microneut_analysis_raw %>% 
-  group_by(pat_group) %>% 
-  count(H1_ov4) %>% filter(!is.na(H1_ov4))%>% 
-  select(pat_group, Over4 = H1_ov4, H1 = n) %>% 
-  print()
-
-micneut_H3 <- microneut_analysis_raw %>% 
-  group_by(pat_group) %>% 
-  count(H3_ov4) %>% filter(!is.na(H3_ov4))%>% 
-  select(pat_group, Over4 = H3_ov4, H3 = n) %>% 
-  print()
-
-micneut_foldoverview <- micneut_vic %>% 
-  left_join(micneut_H1) %>% 
-  left_join(micneut_H3)
-
 # Write files
 write.xlsx(microneut_analysis_raw, file="processed/microneut_analysis_raw.xlsx", overwrite = TRUE, asTable = TRUE)
 write.xlsx(micneut_foldoverview, file="processed/micneut_foldoverview.xlsx", overwrite = TRUE, asTable = TRUE)
 
+#combining datasets for HAI and Microneutralisation
+influenza_antibody_results <- microneut_analysis_raw %>% 
+  left_join(hai_analysis_raw) %>% 
+  select(PID, CryotubeID, Pat_ID, pat_group, SamplingDt, Sampling_number,
+         hai_H1N1 = H1N1,  hai_H3N2 = H3N2,  hai_BVic = BVic,  hai_BYam = BYam, 
+         hai_H1_fold, hai_H3_fold, hai_BVic_fold, hai_BYam_fold,
+         microneut_H1N1_ic50 = FluA_H1_ic50, mirconeut_H3N2_ic50 = FluA_H3_ic50, mirconeut_BVic_ic50 = FluA_Vic_ic50,
+         FluV_H1_fold, FluV_H3_fold, FluV_Vic_fold)
+
+# Write files
+write.xlsx(influenza_antibody_results, file="processed/influenza_antibody_results.xlsx", overwrite = TRUE, asTable = TRUE)
 
