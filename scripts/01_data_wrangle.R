@@ -1,5 +1,5 @@
 ####Index
-# 1) Load Data
+# 1) Import Data
 # 2) ID-File with PID and Cryotube IDs 
     # "joint_file"
 # 3) File with Metadata 
@@ -228,7 +228,7 @@ hai_analysis_raw <- hai_combined %>%
 # Write files
 write.xlsx(hai_analysis_raw, file="processed/hai_analysis_raw.xlsx", overwrite = TRUE, asTable = TRUE)
 
-#### Looking at Microneutralisation data------------------------------------------------
+#7) ####### Looking at Microneutralisation data------------------------------------------------
 ## combining files
 microneut_combined <- joint_file %>%
   left_join(microneut_results_raw, join_by(CryotubeID))
@@ -261,7 +261,7 @@ microneut_analysis_raw <- microneut_combined %>%
 write.xlsx(microneut_analysis_raw, file="processed/microneut_analysis_raw.xlsx", overwrite = TRUE, asTable = TRUE)
 write.xlsx(micneut_foldoverview, file="processed/micneut_foldoverview.xlsx", overwrite = TRUE, asTable = TRUE)
 
-#combining datasets for HAI and Microneutralisation
+#8) combining datasets for HAI and Microneutralisation
 influenza_antibody_results <- microneut_analysis_raw %>% 
   left_join(hai_analysis_raw) %>% 
   select(PID, CryotubeID, Pat_ID, pat_group, SamplingDt, Sampling_number,
