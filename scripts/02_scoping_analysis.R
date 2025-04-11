@@ -4,7 +4,7 @@ library(tidyr)
 library(haven)
 library(here)
 library(lubridate)
-library (openxlsx)
+library(openxlsx)
 library(ggplot2)
 library(stringr)
 library(readr)
@@ -15,13 +15,106 @@ library(car)
 
 #load data
 microneut_analysis_raw  <- read.xlsx("processed/microneut_analysis_raw.xlsx")
+hai_analysis_raw  <- read.xlsx("processed/hai_analysis_raw.xlsx")
+influenza_antibody_results <- read.xlsx("processed/influenza_antibody_results.xlsx")
 
-### Some look at the data
+### Firs look at HAI data
+#####facet_grid by patient group
+#preparation
+hai_analysis_raw_p <- hai_analysis_raw %>% 
+  select(pat_group, Sampling_number, H1N1, H3N2, BVic, BYam, PID) %>% 
+  pivot_longer(cols = 3:6, names_to = "strain", values_to = "result")  
 
+plot_hai_h1n1_wide <- hai_analysis_raw_p %>% 
+  select(pat_group, strain, Sampling_number, result) %>% 
+  filter(strain == "H1N1") %>% 
+  ggplot(aes(x = factor(Sampling_number), y = result, color = pat_group)) +  # Factorize Sampling_number for distinct boxplots
+  geom_boxplot(outlier.shape = NA, alpha = 0) +  # Boxplot with transparency
+  geom_jitter(width = 0.2, height = 0, color = "lightblue", size = 2, alpha = 0.5) +  # Add jittered points
+  labs(y = "HAI - H1N1", x = "Sampling Number") +
+  scale_y_log10(limits = c(10^0.5, 10^3.5), labels = scales::comma) +
+  facet_wrap(~ pat_group, nrow = 1) +  # Facet by patgroup
+  scale_x_discrete(limits = c("1", "2"), labels = c("preVac", "1m")) +  # Ensure the x-axis shows 1 and 2
+  theme_minimal() +
+  guides(color = "none") +
+  theme(
+    axis.text.x = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(face = "bold"),  # Make y-axis title bold
+    strip.text = element_text(face = "bold"),  # Make facet labels bold
+    legend.position = "none"  # Remove legend
+  )
+
+plot_hai_h3n2_wide <- hai_analysis_raw_p %>% 
+  select(pat_group, strain, Sampling_number, result) %>% 
+  filter(strain == "H3N2") %>% 
+  ggplot(aes(x = factor(Sampling_number), y = result, color = pat_group)) +  # Factorize Sampling_number for distinct boxplots
+  geom_boxplot(outlier.shape = NA, alpha = 0) +  # Boxplot with transparency
+  geom_jitter(width = 0.2, height = 0, color = "lightblue", size = 2, alpha = 0.5) +  # Add jittered points
+  labs(y = "HAI - H3N2", x = "Sampling Number") +
+  scale_y_log10(limits = c(10^0.5, 10^3.5), labels = scales::comma) +
+  facet_wrap(~ pat_group, nrow = 1) +  # Facet by patgroup
+  scale_x_discrete(limits = c("1", "2"), labels = c("preVac", "1m")) +  # Ensure the x-axis shows 1 and 2
+  theme_minimal() +
+  guides(color = "none") +
+  theme(
+    axis.text.x = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(face = "bold"),  # Make y-axis title bold
+    strip.text = element_blank(), 
+    legend.position = "none"  # Remove legend
+  )
+
+plot_hai_bvic_wide <- hai_analysis_raw_p %>% 
+  select(pat_group, strain, Sampling_number, result) %>% 
+  filter(strain == "BVic") %>% 
+  ggplot(aes(x = factor(Sampling_number), y = result, color = pat_group)) +  # Factorize Sampling_number for distinct boxplots
+  geom_boxplot(outlier.shape = NA, alpha = 0) +  # Boxplot with transparency
+  geom_jitter(width = 0.2, height = 0, color = "lightblue", size = 2, alpha = 0.5) +  # Add jittered points
+  labs(y = "HAI - BVic", x = "Sampling Number") +
+  scale_y_log10(limits = c(10^0.5, 10^3.5), labels = scales::comma) +
+  facet_wrap(~ pat_group, nrow = 1) +  # Facet by patgroup
+  scale_x_discrete(limits = c("1", "2"), labels = c("preVac", "1m")) +  # Ensure the x-axis shows 1 and 2
+  theme_minimal() +
+  guides(color = "none") +
+  theme(
+    axis.text.x = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(face = "bold"),  # Make y-axis title bold
+    strip.text = element_blank(), 
+    legend.position = "none"  # Remove legend
+  )
+
+
+plot_hai_byam_wide <- hai_analysis_raw_p %>% 
+  select(pat_group, strain, Sampling_number, result) %>% 
+  filter(strain == "BYam") %>% 
+  ggplot(aes(x = factor(Sampling_number), y = result, color = pat_group)) +  # Factorize Sampling_number for distinct boxplots
+  geom_boxplot(outlier.shape = NA, alpha = 0) +  # Boxplot with transparency
+  geom_jitter(width = 0.2, height = 0, color = "lightblue", size = 2, alpha = 0.5) +  # Add jittered points
+  labs(y = "HAI - BYam", x = "Sampling Number") +
+  scale_y_log10(limits = c(10^0.5, 10^3.5), labels = scales::comma) +
+  facet_wrap(~ pat_group, nrow = 1) +  # Facet by patgroup
+  scale_x_discrete(limits = c("1", "2"), labels = c("preVac", "1m")) +  # Ensure the x-axis shows 1 and 2
+  theme_minimal() +
+  guides(color = "none") +
+  theme(
+    axis.text.x = element_text(face = "bold"),  # Make y-axis title bold
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(face = "bold"),  # Make y-axis title bold
+    strip.text = element_blank(), 
+    legend.position = "none"  # Remove legend
+  )
+
+plot_hai_comb_group_wide <- plot_hai_h1n1_wide / plot_hai_h3n2_wide / plot_hai_bvic_wide / plot_hai_byam_wide
+
+
+
+##### First look at microneutralisation data
 #####facet_grid by patient group
 #preparation
 microneut_analysis_raw_p <- microneut_analysis_raw %>% 
-  select(pat_group, Sampling_number, H1 = FluA_H1_ic50, H3 = FluA_H3_ic50, Vic = FluA_Vic_ic50) %>% 
+  select(pat_group, Sampling_number, H1 = FluA_H1_ic50, H3 = FluA_H3_ic50, Vic = FluA_Vic_ic50, PID) %>% 
   pivot_longer(cols = 3:5, names_to = "strain", values_to = "ic50")  
 
 plot_h1_wide <- microneut_analysis_raw_p %>% 
@@ -200,61 +293,6 @@ plot_onc <- microneut_analysis_raw %>%
 
 plot_comb_strain_wide <- plot_co / plot_hiv / plot_rh / plot_ms / plot_onc
 
-### plots with unifrom fixes y-axis
-df <- microneut_analysis_raw %>% 
-  select(pat_group, Sampling_number, H1 = FluA_H1_ic50, H3 = FluA_H3_ic50, Vic = FluA_Vic_ic50) %>% 
-  pivot_longer(cols = c(H1, H3, Vic), names_to = "strain", values_to = "ic50") %>%
-  mutate(across(ic50, ~ ifelse(is.na(.), 39, .))) %>%
-  filter(pat_group == "Control")
-
-# Define individual plots
-plot_H1 <- df %>% filter(strain == "H1") %>%
-  ggplot(aes(x = factor(Sampling_number), y = ic50, fill = factor(Sampling_number))) +
-  geom_boxplot(outlier.shape = NA, alpha = 0) +
-  geom_jitter(width = 0.2, height = 0, color = "lightblue", size = 2, alpha = 0.5) +
-  scale_y_log10(limits = c(10^1, 10^4), labels = scales::comma) +
-  labs(title = "H1", y = "IC50 - Control", x = "Sampling Number") +
-  theme_minimal() +
-  theme(legend.position = "none", strip.text = element_text(face = "bold"))
-
-plot_H3 <- df %>% filter(strain == "H3") %>%
-  ggplot(aes(x = factor(Sampling_number), y = ic50, fill = factor(Sampling_number))) +
-  geom_boxplot(outlier.shape = NA, alpha = 0) +
-  geom_jitter(width = 0.2, height = 0, color = "lightblue", size = 2, alpha = 0.5) +
-  scale_y_log10(limits = c(10^1, 10^4), labels = scales::comma) +
-  labs(title = "H3", y = "IC50 - Control", x = "Sampling Number") +
-  theme_minimal() +
-  theme(legend.position = "none", strip.text = element_text(face = "bold"))
-
-plot_Vic <- df %>% filter(strain == "Vic") %>%
-  ggplot(aes(x = factor(Sampling_number), y = ic50, fill = factor(Sampling_number))) +
-  geom_boxplot(outlier.shape = NA, alpha = 0) +
-  geom_jitter(width = 0.2, height = 0, color = "lightblue", size = 2, alpha = 0.5) +
-  scale_y_log10(limits = c(10^1.5, 10^4), labels = scales::comma) +
-  labs(title = "Vic", y = "IC50 - Control", x = "Sampling Number") +
-  theme_minimal() +
-  theme(legend.position = "none", strip.text = element_text(face = "bold"))
-
-# Combine plots using patchwork
-plot_H1 + plot_H3 + plot_Vic + plot_layout(ncol = 3)
-
-###
-
-#fold increase analysis
-microneut_analysis_raw %>% 
-  select(pat_group, Sampling_number, H1 = FluV_H1_fold, H3 = FluV_H3_fold, Vic = FluV_Vic_fold) %>% 
-  pivot_longer(cols = 3:5, names_to = "strain", values_to = "fold") %>%  
-  filter(Sampling_number == 2) %>% 
-  select(pat_group, strain, fold) %>% 
-  filter(pat_group == "ONK") %>% 
-  ggplot(aes(x = factor(strain), y = fold, fill = factor(strain))) +  # Factorize Sampling_number for distinct boxplots
-  geom_boxplot(outlier.shape = NA, alpha = 0) +  # Boxplot with transparency
-  geom_jitter(width = 0.2, height = 0, color = "grey7", size = 2, alpha = 0.5) +
-  scale_y_continuous(limits = c(0, 10))
-### Zusätzlich linie bei 1, 
-### regression nach invers. baseline titer (fold change ln2 transformieren vorher und anschl, 2summieren, vgl.pnk-paper)
-### adjusten unf auf MEdian baselinetiter (vgl. hirzel neurofilament paper)
-
 ######put together dataset with fold changes and baseline titer for all strains
 ###h1
 h1_base <-  microneut_analysis_raw %>%
@@ -402,7 +440,22 @@ b_linreg_plot_baselog2 <- b_foldbase %>%
   theme_minimal()+
   stat_cor(method = "pearson", label.x = 6, label.y = -4) + # Display Pearson's r
   labs(y = "B - log2 Fold-Change", x = NULL) 
-  
+
+
+### multivariables lineares model
+model1 <- lm(Vic_fold_log2 ~ Vic_base_log2, data = b_foldbase)
+summary(model1). # +Age, sex (als factor), gruppe (als factor)
+qqnorm(model1)
+
+#Vergleiche --> adjustet R2, Residuals, AIC
+#model2 <- lm(#titer_outc_log# ~ Vic_base_log2, data = b_foldbase)
+#summary(model1). # +Age, sex (als factor), gruppe (als factor)
+#qqnorm(model1) #qqplot vgl.
+
+## repeated measures model
+
+
+# residuals plot, qq plot
 b_linreg_plot_basecont <- b_foldbase %>% 
   ggplot(aes(x = Vic_baseline, y = Vic_fold_log2)) +
   geom_point() +
@@ -532,3 +585,71 @@ b_qq_plot <- ggplot(data = data.frame(resid = residuals(adj_model_b)), aes(sampl
 linreg_plot_test_combined = ((b_linreg_plot_baselog2 + b_residuals_plot + b_qq_plot) /
                       (hi1_linreg_plot_baselog2 + h1_residuals_plot + h1_qq_plot) / 
                       (hi3_linreg_plot_baselog2 + h3_residuals_plot + h3_qq_plot))
+
+#### Comparing HAI and Microneutralisation assay
+#harmonize dataset for analysis - same vraiables, row_append hai
+influenza_antibody_harmonised <- microneut_analysis_raw_p %>% 
+  mutate(strain = case_when( strain == "H1" ~ "H1N1",
+                             strain == "H3" ~ "H3N2",
+                             strain == "Vic" ~ "BVic")) %>% 
+  mutate(type = "ic50_microneutr") %>% 
+  select(pat_group, Sampling_number, strain, result = ic50, type, PID) %>%  
+  rows_append(hai_analysis_raw_p %>% mutate(type = "hai")) %>% print()
+
+  
+#rank values by strain and type(Hai vs. Microneut) for correlation - ranking only within the same strain
+influenza_antibody_ranked <- influenza_antibody_harmonised %>% 
+  group_by(type, strain) %>% 
+  mutate(rank_result = rank(result)) %>%
+  ungroup() %>% 
+  print()
+
+df <- influenza_antibody_ranked %>% 
+  filter(type == "ic50_microneutr") %>% 
+  select(PID, pat_group, Sampling_number, strain, ic50_rank = rank_result)
+
+df2 <- influenza_antibody_ranked %>% 
+  filter(type == "hai") %>% 
+  select(PID, pat_group, Sampling_number, strain, hai_rank = rank_result)
+
+df3 <- df2 %>%  
+  left_join(df, by = join_by(PID, pat_group, Sampling_number, strain))
+  
+ggplot(data=df3, aes(x=hai_rank, y=ic50_rank)) +
+  geom_point(size = 2, alpha = 0.5)+
+  geom_smooth(method = "lm", se = TRUE)   # Add regression line with confidence interval
+
+spearman <- cor.test(df3$hai_rank, df3$ic50_rank, method = "spearman")
+rho <- round(spearman$estimate, 2)
+pval <- format.pval(spearman$p.value, digits = 3, eps = .001)
+
+
+ggplot(data=df3, aes(x = hai_rank, y = ic50_rank)) +  # Factorize Sampling_number for distinct boxplots
+  geom_jitter( size = 2, alpha = 0.5) +  # Add jittered points
+  geom_smooth(method = "lm", se = TRUE) +   # Add regression line with confidence interval
+  annotate("text",
+           x = Inf, y = -Inf,
+           hjust = 1.1, vjust = -0.7,
+           label = paste0("Spearman ρ = ", rho, "\nP = ", pval),
+           size = 4) +
+  labs(title = "Rangsummenkorrelation: HAI vs IC50",
+       x = "HAI Rank",
+       y = "IC50 Rank") +
+  theme_minimal()
+  
+#alternative approach using corr (ranking across strains)
+tf <- influenza_antibody_harmonised %>% 
+  filter(type == "ic50_microneutr") %>% 
+  select(pat_group, Sampling_number, strain, ic50res = result, PID, type)
+  
+tf2 <- influenza_antibody_harmonised %>% 
+  filter(type == "hai") %>% 
+  select(pat_group, Sampling_number, strain, haires = result, PID, type)
+
+tf3 <- tf2 %>%  
+  left_join(tf, by = join_by(PID, pat_group, Sampling_number, strain))  %>% 
+  filter(!is.na(ic50res)) %>% 
+  select(pat_group, Sampling_number, strain, haires, PID, ic50res)
+  
+corr <- cor.test(x=tf3$haires, tf3$ic50res, method = 'spearman')
+  
