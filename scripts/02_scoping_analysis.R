@@ -1,3 +1,11 @@
+#Index
+# 1) Load libraries and data 
+# 2) HAI Analysis
+# 3) Microneutralisation Titers
+# 4) Correlation of baseline titers with fold-changes of microneutralisation titers
+# 5) Correlation of HAI and microneutralisation assays
+
+# 1) -------------------------------------------------------------------------------------------------------------------
 #load libraries
 library(dplyr)
 library(tidyr)
@@ -18,7 +26,8 @@ microneut_analysis_raw  <- read.xlsx("processed/microneut_analysis_raw.xlsx")
 hai_analysis_raw  <- read.xlsx("processed/hai_analysis_raw.xlsx")
 influenza_antibody_results <- read.xlsx("processed/influenza_antibody_results.xlsx")
 
-### Firs look at HAI data
+# 2) -------------------------------------------------------------------------------------------------------------------
+### First look at HAI data
 #####facet_grid by patient group
 #preparation
 hai_analysis_raw_p <- hai_analysis_raw %>% 
@@ -109,7 +118,7 @@ plot_hai_byam_wide <- hai_analysis_raw_p %>%
 plot_hai_comb_group_wide <- plot_hai_h1n1_wide / plot_hai_h3n2_wide / plot_hai_bvic_wide / plot_hai_byam_wide
 
 
-
+# 3) -------------------------------------------------------------------------------------------------------------------
 ##### First look at microneutralisation data
 #####facet_grid by patient group
 #preparation
@@ -178,8 +187,7 @@ plot_vic_wide <- microneut_analysis_raw_p %>%
     legend.position = "none"  # Remove legend
   )
 
-plot_comb_group_wide <- plot_h1_wide / plot_h3_wide / plot_vic_wide
-
+plot_ic50_comb_group_wide <- plot_h1_wide / plot_h3_wide / plot_vic_wide
 
 
 #facet_grid by strain
@@ -291,10 +299,12 @@ plot_onc <- microneut_analysis_raw %>%
     legend.position = "none"  # Remove legend
   )
 
-plot_comb_strain_wide <- plot_co / plot_hiv / plot_rh / plot_ms / plot_onc
+plot_ic50_comb_strain_wide <- plot_co / plot_hiv / plot_rh / plot_ms / plot_onc
 
-######put together dataset with fold changes and baseline titer for all strains
-###h1
+# 4) -------------------------------------------------------------------------------------------------------------------
+##### assess correlation of microneutralisation fold changes with baseline titer
+#put together dataset with fold changes and baseline titer for all strains
+#h1
 h1_base <-  microneut_analysis_raw %>%
     filter(Sampling_number == 1) %>% 
     select(PID, H1_baseline = FluA_H1_ic50)
@@ -586,6 +596,7 @@ linreg_plot_test_combined = ((b_linreg_plot_baselog2 + b_residuals_plot + b_qq_p
                       (hi1_linreg_plot_baselog2 + h1_residuals_plot + h1_qq_plot) / 
                       (hi3_linreg_plot_baselog2 + h3_residuals_plot + h3_qq_plot))
 
+# 5) -------------------------------------------------------------------------------------------------------------------
 #### Comparing HAI and Microneutralisation assay
 #harmonize dataset for analysis - same vraiables, row_append hai
 influenza_antibody_harmonised <- microneut_analysis_raw_p %>% 
