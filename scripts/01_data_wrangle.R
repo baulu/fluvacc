@@ -242,6 +242,9 @@ microneut_analysis_raw <- microneut_combined %>%
   mutate(FluV_H1_fold = FluA_H1_ic50 / lag(FluA_H1_ic50)) %>%
   mutate(FluV_H3_fold = FluA_H3_ic50 / lag(FluA_H3_ic50)) %>%
   mutate(FluV_Vic_fold = FluA_Vic_ic50 / lag(FluA_Vic_ic50)) %>%
+  mutate(FluV_H1_fold_log2first = log2(FluA_H1_ic50) / log2(lag(FluA_H1_ic50))) %>%
+  mutate(FluV_H3_fold_log2first = log2(FluA_H3_ic50) / log2(lag(FluA_H3_ic50))) %>%
+  mutate(FluV_Vic_fold_log2first = log2(FluA_Vic_ic50) / log2(lag(FluA_Vic_ic50))) %>%
   ungroup() %>% 
   mutate(pat_group = case_when(
     str_detect(Pat_ID, "CO")  ~ "Control",
@@ -254,12 +257,11 @@ microneut_analysis_raw <- microneut_combined %>%
   #mutate(H1_ov4 = FluV_H1_fold > 4) %>%  
   #mutate(H3_ov4 = FluV_H3_fold > 4) %>%  
   #mutate(Vic_ov4 = FluV_Vic_fold > 4) %>%  
-  select(PID, CryotubeID, Pat_ID, pat_group, SamplingDt, Sampling_number, FluA_H1_ic50, FluA_H3_ic50, FluA_Vic_ic50, FluV_H1_fold,FluV_H3_fold,FluV_Vic_fold) %>% 
+  select(PID, CryotubeID, Pat_ID, pat_group, SamplingDt, Sampling_number, FluA_H1_ic50, FluA_H3_ic50, FluA_Vic_ic50, FluV_H1_fold, FluV_H1_fold_log2first ,FluV_H3_fold, FluV_H3_fold_log2first, FluV_Vic_fold, FluV_Vic_fold_log2first) %>% 
   print()
 
 # Write files
 write.xlsx(microneut_analysis_raw, file="processed/microneut_analysis_raw.xlsx", overwrite = TRUE, asTable = TRUE)
-write.xlsx(micneut_foldoverview, file="processed/micneut_foldoverview.xlsx", overwrite = TRUE, asTable = TRUE)
 
 #8) combining datasets for HAI and Microneutralisation
 influenza_antibody_results <- microneut_analysis_raw %>% 
