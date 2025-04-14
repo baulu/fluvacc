@@ -245,6 +245,9 @@ microneut_analysis_raw <- microneut_combined %>%
   mutate(FluV_H1_fold_log2first = log2(FluA_H1_ic50) / log2(lag(FluA_H1_ic50))) %>%
   mutate(FluV_H3_fold_log2first = log2(FluA_H3_ic50) / log2(lag(FluA_H3_ic50))) %>%
   mutate(FluV_Vic_fold_log2first = log2(FluA_Vic_ic50) / log2(lag(FluA_Vic_ic50))) %>%
+  mutate(FluV_H1_fold_log10first = log10(FluA_H1_ic50) / log10(lag(FluA_H1_ic50))) %>%
+  mutate(FluV_H3_fold_log10first = log10(FluA_H3_ic50) / log10(lag(FluA_H3_ic50))) %>%
+  mutate(FluV_Vic_fold_log10first = log10(FluA_Vic_ic50) / log10(lag(FluA_Vic_ic50))) %>%
   ungroup() %>% 
   mutate(pat_group = case_when(
     str_detect(Pat_ID, "CO")  ~ "Control",
