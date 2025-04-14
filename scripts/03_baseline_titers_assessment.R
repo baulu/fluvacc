@@ -313,65 +313,183 @@ linreg_plot_comb2 = (b_linreg_plot_baselog2 + b_linreg_plot_log2first) / (hi1_li
 
 # 2b)) -------------------------------------------------------------------------------------------------------------------
 ### Linere regression log2 baseline titer vs. log2 fold-change and qq-plots
-## univeriables lineares model / B-Victoria
-model1 <- lm(Vic_fold_log2 ~ Vic_base_log2, data = b_foldbase)
-summary(model1)
-qqnorm(residuals(model1))
-qqline(residuals(model1), col = "red")
+## univariables lineares model / B-Victoria
+b_model1 <- lm(Vic_fold_log2 ~ Vic_base_log2, data = b_foldbase)
+sum_b_model1 <- summary(b_model1)
 
-model1_lf <- lm(Vic_fold_log2first ~ Vic_base_log2, data = b_foldbase)
-summary(model1_lf )
-qqnorm(residuals(model1_lf ))
-qqline(residuals(model1_lf ), col = "red")
+#qq plot
+b_uni_qq_plot <- ggplot(data = data.frame(resid = residuals(b_model1)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  theme_minimal() +
+  labs(   title = "B univar Q-Q Plot",
+          x = "Theoretical Quantiles", 
+          y = "Sample Quantiles")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+# log first
+b_model1_lf <- lm(Vic_fold_log2first ~ Vic_base_log2, data = b_foldbase)
+sum_b_model1_lf <- summary(b_model1_lf)
+
+#qq plot
+b_uni_lf_qq_plot <- ggplot(data = data.frame(resid = residuals(b_model1_lf)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  theme_minimal() +
+  labs(   title = "B univar Q-Q Plot / LogF",
+          x = "Theoretical Quantiles", 
+          y = "Sample Quantiles")+
+  theme(plot.title = element_text(hjust = 0.5))
 
 ## multivariables lineares model / B-Victoria
 b_foldbase_meta <- b_foldbase %>% 
   left_join(basefile_withPID)
 
-model2 <- lm(Vic_fold_log2 ~ Vic_base_log2 + gen_age + as.factor(gen_sex) + as.factor(study_group), data = b_foldbase_meta)
-summary(model2) # +Age, sex (als factor), gruppe (als factor)
-qqnorm(residuals(model2))
-qqline(residuals(model2), col = "red")
+b_model2 <- lm(Vic_fold_log2 ~ Vic_base_log2 + gen_age + as.factor(gen_sex) + as.factor(study_group), data = b_foldbase_meta)
+summary(b_model2) # +Age, sex (als factor), gruppe (als factor)
 
-model2_lf <- lm(Vic_fold_log2first ~ Vic_base_log2 + gen_age + as.factor(gen_sex) + as.factor(study_group), data = b_foldbase_meta)
-summary(model2_lf) # +Age, sex (als factor), gruppe (als factor)
-qqnorm(residuals(model2_lf))
-qqline(residuals(model2_lf), col = "red")
+#qq plot
+b_multi_qq_plot <- ggplot(data = data.frame(resid = residuals(b_model2)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  theme_minimal() +
+  labs(   title = "B multivariant Q-Q Plot",
+          x = "Theoretical Quantiles", 
+          y = "Sample Quantiles")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+# log first
+b_model2_lf <- lm(Vic_fold_log2first ~ Vic_base_log2 + gen_age + as.factor(gen_sex) + as.factor(study_group), data = b_foldbase_meta)
+summary(b_model2_lf) # +Age, sex (als factor), gruppe (als factor)
+
+#qq plot
+b_multi_lf_qq_plot <- ggplot(data = data.frame(resid = residuals(b_model2_lf)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  theme_minimal() +
+  labs(   title = "B multivariant Q-Q Plot / LogF",
+          x = "Theoretical Quantiles", 
+          y = "Sample Quantiles")+
+  theme(plot.title = element_text(hjust = 0.5))
 
 ## univeriables lineares model / H1N1
-model3 <- lm(H1_fold_log2 ~ H1_base_log2, data = hi1_foldbase)
-summary(model3)
-qqnorm(residuals(model3))
-qqline(residuals(model3), col = "red")
+h1_model1 <- lm(H1_fold_log2 ~ H1_base_log2, data = hi1_foldbase)
+sum_h1_model1 <- summary(h1_model1)
+
+#qq plot
+h1_uni_qq_plot <- ggplot(data = data.frame(resid = residuals(h1_model1)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  theme_minimal() +
+  labs(   title = "H1N1 univar Q-Q Plot",
+          x = "Theoretical Quantiles", 
+          y = "Sample Quantiles")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+# log first
+h1_model1_lf <- lm(H1_fold_log2first ~ H1_base_log2, data = hi1_foldbase)
+sum_h1_model1_lf <- summary(h1_model1)
+
+#qq plot
+h1_uni_lf_qq_plot <- ggplot(data = data.frame(resid = residuals(h1_model1_lf)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  theme_minimal() +
+  labs(   title = "H1N1 univar Q-Q Plot / logF",
+          x = "Theoretical Quantiles", 
+          y = "Sample Quantiles")+
+  theme(plot.title = element_text(hjust = 0.5))
 
 ## multivariables lineares model / H1N1
 hi1_foldbase_meta <- hi1_foldbase %>% 
   left_join(basefile_withPID)
 
-model4 <- lm(H1_fold_log2 ~ H1_base_log2 + gen_age + as.factor(gen_sex) + as.factor(study_group), data = hi1_foldbase_meta)
-summary(model4) # +Age, sex (als factor), gruppe (als factor)
-qqnorm(residuals(model4))
-qqline(residuals(model4), col = "red")
+h1_model2 <- lm(H1_fold_log2 ~ H1_base_log2 + gen_age + as.factor(gen_sex) + as.factor(study_group), data = hi1_foldbase_meta)
+sum_h1_model2 <- summary(h1_model2) # +Age, sex (als factor), gruppe (als factor)
 
-model4_lf <- lm(H1_fold_log2first ~ H1_base_log2 + gen_age + as.factor(gen_sex) + as.factor(study_group), data = hi1_foldbase_meta)
-summary(model4_lf) # +Age, sex (als factor), gruppe (als factor)
-qqnorm(residuals(model4_lf))
-qqline(residuals(model4_lf), col = "red")
+#qq plot
+h1_multi_qq_plot <- ggplot(data = data.frame(resid = residuals(h1_model2)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  theme_minimal() +
+  labs(   title = "H1N1 multivar Q-Q Plot",
+          x = "Theoretical Quantiles", 
+          y = "Sample Quantiles")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+# log first
+h1_model2_lf <- lm(H1_fold_log2first ~ H1_base_log2 + gen_age + as.factor(gen_sex) + as.factor(study_group), data = hi1_foldbase_meta)
+sum_h1_model2_lf <- summary(h1_model2_lf) # +Age, sex (als factor), gruppe (als factor)
+
+#qq plot
+h1_multi_lf_qq_plot <- ggplot(data = data.frame(resid = residuals(h1_model2_lf)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  theme_minimal() +
+  labs(   title = "H1N1 multivar Q-Q Plot / logF",
+          x = "Theoretical Quantiles", 
+          y = "Sample Quantiles")+
+  theme(plot.title = element_text(hjust = 0.5))
 
 ## univeriables lineares model / H3N2
-model5 <- lm(H3_fold_log2 ~ H3_base_log2, data = hi3_foldbase)
-summary(model5)
-qqnorm(residuals(model5))
-qqline(residuals(model5), col = "red")
+h3_model5 <- lm(H3_fold_log2 ~ H3_base_log2, data = hi3_foldbase)
+sum_h3_model5 <- summary(h3_model5)
+
+#qq plot
+h3_uni_qq_plot <- ggplot(data = data.frame(resid = residuals(h3_model5)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  theme_minimal() +
+  labs(   title = "H3N2 univar Q-Q Plot",
+          x = "Theoretical Quantiles", 
+          y = "Sample Quantiles")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+#Log first
+h3_model5_lf <- lm(H3_fold_log2first ~ H3_base_log2, data = hi3_foldbase)
+sum_h3_model5_lf <- summary(h3_model5_lf)
+
+#qq plot
+h3_uni_lf_qq_plot <- ggplot(data = data.frame(resid = residuals(h3_model5_lf)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  theme_minimal() +
+  labs(   title = "H3N2 univar Q-Q Plot / logF",
+          x = "Theoretical Quantiles", 
+          y = "Sample Quantiles")+
+  theme(plot.title = element_text(hjust = 0.5))
 
 ## multivariables lineares model / H3N2
 hi3_foldbase_meta <- hi3_foldbase %>% 
   left_join(basefile_withPID)
 
-model6 <- lm(H3_fold_log2 ~ H3_base_log2 + gen_age + as.factor(gen_sex) + as.factor(study_group), data = hi3_foldbase_meta)
-summary(model6) # +Age, sex (als factor), gruppe (als factor)
-qqnorm(residuals(model6))
-qqline(residuals(model6), col = "red")
+h3_model6 <- lm(H3_fold_log2 ~ H3_base_log2 + gen_age + as.factor(gen_sex) + as.factor(study_group), data = hi3_foldbase_meta)
+sum_h3_model6 <- summary(h3_model6) # +Age, sex (als factor), gruppe (als factor)
+
+#qq plot
+h3_multi_qq_plot <- ggplot(data = data.frame(resid = residuals(h3_model6)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  theme_minimal() +
+  labs(   title = "H3N2 multi Q-Q Plot",
+          x = "Theoretical Quantiles", 
+          y = "Sample Quantiles")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+# log first
+h3_model6_lf <- lm(H3_fold_log2 ~ H3_base_log2 + gen_age + as.factor(gen_sex) + as.factor(study_group), data = hi3_foldbase_meta)
+sum_h3_model6_lf <- summary(h3_model6_lf) # +Age, sex (als factor), gruppe (als factor)
+
+#qq plot
+h3_multi_lf_qq_plot <- ggplot(data = data.frame(resid = residuals(h3_model6_lf)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  theme_minimal() +
+  labs(   title = "H3N2 multi Q-Q Plot / logF",
+          x = "Theoretical Quantiles", 
+          y = "Sample Quantiles")+
+  theme(plot.title = element_text(hjust = 0.5))
+
 
 #Vergleiche --> adjustet R2, Residuals, AIC
 

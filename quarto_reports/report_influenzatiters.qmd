@@ -57,7 +57,7 @@ linreg_plot_comb
 linreg_plot_comb2
 ```
 
-## Comparing correlation of Microneutralisation Fold Changes to baseline titers with different models
+## Comparing correlation of Microneutralisation Fold Changes to baseline titers with used different models
 
 **H1N1 Strain**
 
@@ -77,9 +77,21 @@ corh3_comb
 corb_comb
 ```
 
---\> base_log2 vs. log2 first has the highest correlation coefficient for all 3 strains. log2 or log10 gives same results.
+--\> base_log2 vs. log2 first has the highest correlation coefficient for all 3 strains. log2 or log10 gives same results. Seems most appropriate to use this for linear regressions.
 
-# Linear Regression Models & Residual Diagnostics
+# Assessing Linear Regression Models & Residuals
+
+QQ plots from multivariant regression models for all strains - comparing log2 and log2 first (predictors: age, sex, group, baseline titers)
+```{r}
+sumplot_qq_uni
+```
+
+QQ plots from multivariant regression models for all strains - comparing log2 and log2 first (predictors: age, sex, group, baseline titers)
+```{r}
+sumplot_qq_multi
+```
+
+
 
 ```{r}
 linreg_plot_test_combined
