@@ -20,10 +20,10 @@ library(ggpubr)
 library(car)
 
 #load data
-microneut_analysis_raw  <- read.xlsx("processed/microneut_analysis_raw.xlsx")
-hai_analysis_raw  <- read.xlsx("processed/hai_analysis_raw.xlsx")
-influenza_antibody_results <- read.xlsx("processed/influenza_antibody_results.xlsx")
-basefile_withPID <- read.xlsx("processed/FluVac_basefile_withPID.xlsx")
+microneut_analysis_raw  <- read.xlsx(here::here("processed", "microneut_analysis_raw.xlsx"))
+hai_analysis_raw  <- read.xlsx(here::here("processed", "hai_analysis_raw.xlsx"))
+influenza_antibody_results <- read.xlsx(here::here("processed", "influenza_antibody_results.xlsx"))
+basefile_withPID <- read.xlsx(here::here("processed", "FluVac_basefile_withPID.xlsx"))
 
 # 2) -------------------------------------------------------------------------------------------------------------------
 ### First look at HAI data
