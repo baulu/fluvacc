@@ -9,6 +9,9 @@ format:
     code-fold: true
     code-summary: "Show Code"
     warning: false
+    echo: false
+execute:
+  cache: false   
 editor: visual
 ---
 
@@ -19,31 +22,62 @@ editor: visual
 source(here::here("scripts", "02_hai_microneut_basic_analysis.R"))
 ```
 
+**Display pre-post vaccine HAI-titers by group and strain**
+
 ```{r}
 plot_hai_comb_group_wide
 ```
 
 # Microneutralisation Titers
 
+**Display pre-post vaccine microneutralisation titers by group and strain**
+
 ```{r}
 plot_ic50_comb_group_wide
-
-plot_ic50_comb_strain_wide
 ```
 
 # Correlation of Baseline Titers with Fold-Changes
 
 ```{r}
+#| include: false
 source(here::here("scripts", "03_baseline_titers_assessment.R"))
 ```
 
+## Different linear regression models to assess optimal way to adjust for basline titers
+
+1)  log2 Fold-Changes (y-axis) and untransformed vs. log2-transformed baseline titers
+
 ```{r}
 linreg_plot_comb
-
-linreg_plot_comb2
-
-corb_comb_all
 ```
+
+2)  log2 Fold-Changes vs. log2 first Fold-Changes (y-axis) and log2-transformed baseline titers
+
+```{r}
+linreg_plot_comb2
+```
+
+## Comparing correlation of Microneutralisation Fold Changes to baseline titers with different models
+
+**H1N1 Strain**
+
+```{r}
+cor_comb1
+```
+
+**H3N2 Strain**
+
+```{r}
+corh3_comb
+```
+
+**B Victoria Strain**
+
+```{r}
+corb_comb
+```
+
+--\> base_log2 vs. log2 first has the highest correlation coefficient for all 3 strains. log2 or log10 gives same results.
 
 # Linear Regression Models & Residual Diagnostics
 
@@ -54,6 +88,7 @@ linreg_plot_test_combined
 # Correlation of HAI and Microneutralisation Assays
 
 ```{r}
+#| include: false
 source(here::here("scripts", "04_hai_vs_microneut.R"))
 ```
 

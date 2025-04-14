@@ -36,7 +36,7 @@ h1_base <-  microneut_analysis_raw %>%
 
 h1_fold <-  microneut_analysis_raw %>%
   filter(Sampling_number == 2) %>% 
-  select(PID, H1_fold = FluV_H1_fold, H1_fold_log2first = FluV_H1_fold_log2first)
+  select(PID, H1_fold = FluV_H1_fold, H1_fold_log2first = FluV_H1_fold_log2first, H1_fold_log10first = FluV_H1_fold_log10first)
   
 hi1_foldbase <- h1_base %>% 
   left_join(h1_fold) %>% 
@@ -50,11 +50,12 @@ hi1_linreg_plot_baselog2 <- hi1_foldbase %>%
   ggplot(aes(x = H1_base_log2, y = H1_fold_log2)) +
   geom_point() +
   geom_smooth(method = "lm", se = TRUE) +  # Add regression line with confidence interval
-  #scale_x_continuous(limits = c(0, 13000)) +
+  scale_x_continuous(limits = c(5, 16)) +
+  scale_y_continuous(limits = c(-5, 8)) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "red") +  # Add horizontal line
   theme_minimal()+
   stat_cor(method = "pearson", label.x = 6, label.y = -4)  + # Display Pearson's r
-  labs(y = "H1 - log2 Fold-Change", x = NULL) 
+  labs(y = "H1 - log2 FC", x = NULL) 
 
 hi1_linreg_plot_basecont <- hi1_foldbase %>% 
   ggplot(aes(x = H1_baseline, y = H1_fold_log2)) +
@@ -70,16 +71,18 @@ hi1_linreg_plot_log2first <- hi1_foldbase %>%
   ggplot(aes(x = H1_base_log2, y = H1_fold_log2first)) +
   geom_point() +
   geom_smooth(method = "lm", se = TRUE) +  # Add regression line with confidence interval
-  #scale_x_continuous(limits = c(0, 13000)) +
+  scale_x_continuous(limits = c(5, 16)) +
+  scale_y_continuous(limits = c(0, 3)) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "red") +  # Add horizontal line
   theme_minimal()+
-  stat_cor(method = "pearson", label.x = 6, label.y = -0.25) + # Display Pearson's r
-  labs(y = NULL, x = NULL) 
+  stat_cor(method = "pearson", label.x = 6, label.y = 0.25) + # Display Pearson's r
+  labs(y = "H1 - log2 first FC", x = NULL) 
 
 # Perform Pearson correlation tests
 cor_result1 <- cor.test(hi1_foldbase$H1_baseline, hi1_foldbase$H1_fold_log2, method = "pearson")
 cor_result2 <- cor.test(hi1_foldbase$H1_base_log2, hi1_foldbase$H1_fold_log2, method = "pearson")
 cor_result3_logfirst <- cor.test(hi1_foldbase$H1_base_log2, hi1_foldbase$H1_fold_log2first, method = "pearson")
+cor_result4_log10first <- cor.test(hi1_foldbase$H1_base_log10, hi1_foldbase$H1_fold_log10first, method = "pearson")
 
 # Extract values and save in a dataframe
 cor_df <- data.frame(
@@ -103,9 +106,17 @@ cor_df3_log2first <- data.frame(
   P_Value = cor_result3_logfirst$p.value
 )
 
+cor_df4_log10first <- data.frame(
+  Variable1 = "H1_base_log10",
+  Variable2 = "H1_fold_log10first",
+  Correlation_Coefficient = cor_result4_log10first$estimate,
+  P_Value = cor_result4_log10first$p.value
+)
+
 cor_comb1 <- cor_df %>% 
   rows_append(cor_df2) %>% 
   rows_append(cor_df3_log2first) %>% 
+  rows_append(cor_df4_log10first) %>% 
   print()
  
 
@@ -116,7 +127,7 @@ h3_base <-  microneut_analysis_raw %>%
 
 h3_fold <-  microneut_analysis_raw %>%
   filter(Sampling_number == 2) %>% 
-  select(PID, H3_fold = FluV_H3_fold, H3_fold_log2first = FluV_H3_fold_log2first)
+  select(PID, H3_fold = FluV_H3_fold, H3_fold_log2first = FluV_H3_fold_log2first, H3_fold_log10first = FluV_H3_fold_log10first)
 
 hi3_foldbase <- h3_base %>% 
   left_join(h3_fold) %>% 
@@ -130,11 +141,12 @@ hi3_linreg_plot_baselog2 <- hi3_foldbase %>%
   ggplot(aes(x = H3_base_log2, y = H3_fold_log2)) +
   geom_point() +
   geom_smooth(method = "lm", se = TRUE) +  # Add regression line with confidence interval
-  #scale_x_continuous(limits = c(0, 13000)) +
+  scale_x_continuous(limits = c(5, 16)) +
+  scale_y_continuous(limits = c(-5, 8)) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "red") +  # Add horizontal line
   theme_minimal()+
   stat_cor(method = "pearson", label.x = 6, label.y = -4) + # Display Pearson's r
-  labs(y = "H3 - log2 Fold-Change", x = "log2 Transformed Baseline Titers") 
+  labs(y = "H3 - log2 FC", x = "log2 Transformed Baseline Titers") 
   
 hi3_linreg_plot_basecont <- hi3_foldbase %>% 
   ggplot(aes(x = H3_baseline, y = H3_fold_log2)) +
@@ -149,16 +161,18 @@ hi3_linreg_plot_log2first <- hi3_foldbase %>%
   ggplot(aes(x = H3_base_log2, y = H3_fold_log2first)) +
   geom_point() +
   geom_smooth(method = "lm", se = TRUE) +  # Add regression line with confidence interval
-  #scale_x_continuous(limits = c(0, 13000)) +
+  scale_x_continuous(limits = c(5, 16)) +
+  scale_y_continuous(limits = c(0, 3)) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "red") +  # Add horizontal line
   theme_minimal()+
-  stat_cor(method = "pearson", label.x = 6, label.y = -0.25) + # Display Pearson's r
-  labs(y = NULL, x = NULL) 
+  stat_cor(method = "pearson", label.x = 6, label.y = 0.25) + # Display Pearson's r
+  labs(y = "H3 - log2 first FC", x = "log2 Transformed Baseline Titers") 
 
 # Perform Pearson correlation tests
 corh3_result1 <- cor.test(hi3_foldbase$H3_baseline, hi3_foldbase$H3_fold_log2, method = "pearson")
 corh3_result2 <- cor.test(hi3_foldbase$H3_base_log2, hi3_foldbase$H3_fold_log2, method = "pearson")
 corh3_result3_log2first <- cor.test(hi3_foldbase$H3_base_log2, hi3_foldbase$H3_fold_log2first, method = "pearson")
+corh3_result4_log10first <- cor.test(hi3_foldbase$H3_base_log10, hi3_foldbase$H3_fold_log10first, method = "pearson")
 
 
 # Extract values and save in a dataframe
@@ -183,9 +197,17 @@ corh3_df2_log2first <- data.frame(
   P_Value = corh3_result3_log2first$p.value
 )
 
+corh3_df2_log10first <- data.frame(
+  Variable1 = "H3_base_log10",
+  Variable2 = "H3_fold_log10first",
+  Correlation_Coefficient = corh3_result4_log10first$estimate,
+  P_Value = corh3_result4_log10first$p.value
+)
+
 corh3_comb <- corh3_df %>% 
   rows_append(corh3_df2) %>% 
   rows_append(corh3_df2_log2first) %>% 
+  rows_append(corh3_df2_log10first) %>% 
   print()
 
 ###B
@@ -195,7 +217,7 @@ b_base <-  microneut_analysis_raw %>%
 
 b_fold <-  microneut_analysis_raw %>%
   filter(Sampling_number == 2) %>% 
-  select(PID, Vic_fold = FluV_Vic_fold, Vic_fold_log2first = FluV_Vic_fold_log2first)
+  select(PID, Vic_fold = FluV_Vic_fold, Vic_fold_log2first = FluV_Vic_fold_log2first, Vic_fold_log10first = FluV_Vic_fold_log10first)
 
 b_foldbase <- b_base %>% 
   left_join(b_fold) %>% 
@@ -209,10 +231,12 @@ b_linreg_plot_baselog2 <- b_foldbase %>%
   ggplot(aes(x = Vic_base_log2, y = Vic_fold_log2)) +
   geom_point() +
   geom_smooth(method = "lm", se = TRUE) +  # Add regression line with confidence interval
+  scale_x_continuous(limits = c(5, 16)) +
+  scale_y_continuous(limits = c(-5, 8)) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "red") +  # Add horizontal line
   theme_minimal()+
-  #stat_cor(method = "pearson", label.x = 6, label.y = -4) + # Display Pearson's r
-  labs(y = "B - log2 Fold-Change", x = NULL) 
+  stat_cor(method = "pearson", label.x = 6, label.y = -4) + # Display Pearson's r
+  labs(y = "B - log2 FC", x = NULL) 
 
 b_linreg_plot_basecont <- b_foldbase %>% 
   ggplot(aes(x = Vic_baseline, y = Vic_fold_log2)) +
@@ -228,17 +252,18 @@ b_linreg_plot_log2first <- b_foldbase %>%
   ggplot(aes(x = Vic_base_log2, y = Vic_fold_log2first)) +
   geom_point() +
   geom_smooth(method = "lm", se = TRUE) +  # Add regression line with confidence interval
-  #scale_x_continuous(limits = c(0, 13000)) +
+  scale_x_continuous(limits = c(5, 16)) +
+  scale_y_continuous(limits = c(0, 3)) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "red") +  # Add horizontal line
   theme_minimal()+
-  stat_cor(method = "pearson", label.x = 6, label.y = -0.25) + # Display Pearson's r
-  labs(y = NULL, x = NULL) 
+  stat_cor(method = "pearson", label.x = 6, label.y = 0.25) + # Display Pearson's r
+  labs(y = "B - log2 first FC", x = NULL) 
 
 # Perform Pearson correlation tests
 corb_result1 <- cor.test(b_foldbase$Vic_baseline, b_foldbase$Vic_fold_log2, method = "pearson")
 corb_result2 <- cor.test(b_foldbase$Vic_base_log2, b_foldbase$Vic_fold_log2, method = "pearson")
 corb_result3_log2first <- cor.test(b_foldbase$Vic_base_log2, b_foldbase$Vic_fold_log2first, method = "pearson")
-
+corb_result4_log2first <- cor.test(b_foldbase$Vic_base_log10, b_foldbase$Vic_fold_log10first, method = "pearson")
 
 # Extract values and save in a dataframe
 corb_df <- data.frame(
@@ -262,9 +287,17 @@ corb_df3_log2first <- data.frame(
   P_Value = corb_result3_log2first$p.value
 )
 
+corb_df3_log10first <- data.frame(
+  Variable1 = "B_base_log10",
+  Variable2 = "B_fold_log10first",
+  Correlation_Coefficient = corb_result4_log2first$estimate,
+  P_Value = corb_result4_log2first$p.value
+)
+
 corb_comb <- corb_df %>% 
   rows_append(corb_df2) %>%
   rows_append(corb_df3_log2first) %>% 
+  rows_append(corb_df3_log10first) %>% 
   print()
 
 #combining all correlation tests
