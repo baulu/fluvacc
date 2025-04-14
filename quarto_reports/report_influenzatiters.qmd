@@ -1,0 +1,93 @@
+---
+title: "Influenza Antibody Analysis"
+author: "Your Name"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    code-fold: true
+    code-summary: "Show Code"
+editor: visual
+---
+
+# 1. Load Libraries & Data
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(haven)
+library(here)
+library(lubridate)
+library(openxlsx)
+library(ggplot2)
+library(stringr)
+library(readr)
+library(scales)
+library(patchwork)
+library(ggpubr)
+library(car)
+
+microneut_analysis_raw  <- read.xlsx(here::here("processed", "microneut_analysis_raw.xlsx"))
+hai_analysis_raw  <- read.xlsx(here::here("processed", "hai_analysis_raw.xlsx"))
+influenza_antibody_results <- read.xlsx(here::here("processed", "influenza_antibody_results.xlsx"))
+basefile_withPID <- read.xlsx(here::here("processed", "FluVac_basefile_withPID.xlsx"))
+```
+
+# 2. HAI Analysis
+
+```{r}
+hai_analysis_raw_p <- hai_analysis_raw %>%
+  select(pat_group, Sampling_number, H1N1, H3N2, BVic, BYam, PID) %>%
+  pivot_longer(cols = 3:6, names_to = "strain", values_to = "result")
+
+plot_hai_comb_group_wide
+```
+
+# 3. Microneutralisation Titers
+
+```{r}
+microneut_analysis_raw_p <- microneut_analysis_raw %>%
+  select(pat_group, Sampling_number, H1 = FluA_H1_ic50, H3 = FluA_H3_ic50, Vic = FluA_Vic_ic50, PID) %>%
+  pivot_longer(cols = 3:5, names_to = "strain", values_to = "ic50")
+
+plot_ic50_comb_group_wide
+
+plot_ic50_comb_strain_wide
+```
+
+# 4. Correlation of Baseline Titers with Fold-Changes
+
+```{r}
+linreg_plot_comb
+
+linreg_plot_comb2
+
+corb_comb_all
+```
+
+# 4b. Linear Regression Models & Residual Diagnostics
+
+```{r}
+linreg_plot_test_combined
+```
+
+# 5. Correlation of HAI and Microneutralisation Assays
+
+```{r}
+influenza_antibody_harmonised
+influenza_antibody_ranked
+
+ggplot(data=df3, aes(x=hai_rank, y=ic50_rank)) +
+  geom_point(size = 2, alpha = 0.5) +
+  geom_smooth(method = "lm", se = TRUE) +
+  annotate("text",
+           x = Inf, y = -Inf,
+           hjust = 1.1, vjust = -0.7,
+           label = paste0("Spearman ρ = ", rho, "\nP = ", pval),
+           size = 4) +
+  labs(title = "Rank Correlation: HAI vs IC50",
+       x = "HAI Rank",
+       y = "IC50 Rank") +
+  theme_minimal()
+```
