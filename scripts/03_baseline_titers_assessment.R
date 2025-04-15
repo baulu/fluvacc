@@ -19,6 +19,8 @@ library(scales)
 library(patchwork)
 library(ggpubr)
 library(car)
+library(knitr)
+library(kableExtra)
 
 #load data
 microneut_analysis_raw  <- read.xlsx(here::here("processed", "microneut_analysis_raw.xlsx"))
@@ -338,7 +340,7 @@ b_uni_lf_qq_plot <- ggplot(data = data.frame(resid = residuals(b_model1_lf)), ae
   theme_minimal() +
   labs(   title = "B univar Q-Q Plot / LogF",
           x = "Theoretical Quantiles", 
-          y = "Sample Quantiles")+
+          y = NULL)+
   theme(plot.title = element_text(hjust = 0.5))
 
 ## multivariables lineares model / B-Victoria
@@ -369,7 +371,7 @@ b_multi_lf_qq_plot <- ggplot(data = data.frame(resid = residuals(b_model2_lf)), 
   theme_minimal() +
   labs(   title = "B multivariant Q-Q Plot / LogF",
           x = "Theoretical Quantiles", 
-          y = "Sample Quantiles")+
+          y = NULL)+
   theme(plot.title = element_text(hjust = 0.5))
 
 ## univeriables lineares model / H1N1
@@ -382,7 +384,7 @@ h1_uni_qq_plot <- ggplot(data = data.frame(resid = residuals(h1_model1)), aes(sa
   stat_qq_line(color = "red") +
   theme_minimal() +
   labs(   title = "H1N1 univar Q-Q Plot",
-          x = "Theoretical Quantiles", 
+          x = NULL, 
           y = "Sample Quantiles")+
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -396,8 +398,8 @@ h1_uni_lf_qq_plot <- ggplot(data = data.frame(resid = residuals(h1_model1_lf)), 
   stat_qq_line(color = "red") +
   theme_minimal() +
   labs(   title = "H1N1 univar Q-Q Plot / logF",
-          x = "Theoretical Quantiles", 
-          y = "Sample Quantiles")+
+          x = NULL, 
+          y = NULL)+
   theme(plot.title = element_text(hjust = 0.5))
 
 ## multivariables lineares model / H1N1
@@ -413,7 +415,7 @@ h1_multi_qq_plot <- ggplot(data = data.frame(resid = residuals(h1_model2)), aes(
   stat_qq_line(color = "red") +
   theme_minimal() +
   labs(   title = "H1N1 multivar Q-Q Plot",
-          x = "Theoretical Quantiles", 
+          x = NULL, 
           y = "Sample Quantiles")+
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -427,8 +429,8 @@ h1_multi_lf_qq_plot <- ggplot(data = data.frame(resid = residuals(h1_model2_lf))
   stat_qq_line(color = "red") +
   theme_minimal() +
   labs(   title = "H1N1 multivar Q-Q Plot / logF",
-          x = "Theoretical Quantiles", 
-          y = "Sample Quantiles")+
+          x = NULL, 
+          y = NULL)+
   theme(plot.title = element_text(hjust = 0.5))
 
 ## univeriables lineares model / H3N2
@@ -441,7 +443,7 @@ h3_uni_qq_plot <- ggplot(data = data.frame(resid = residuals(h3_model5)), aes(sa
   stat_qq_line(color = "red") +
   theme_minimal() +
   labs(   title = "H3N2 univar Q-Q Plot",
-          x = "Theoretical Quantiles", 
+          x = NULL, 
           y = "Sample Quantiles")+
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -455,8 +457,8 @@ h3_uni_lf_qq_plot <- ggplot(data = data.frame(resid = residuals(h3_model5_lf)), 
   stat_qq_line(color = "red") +
   theme_minimal() +
   labs(   title = "H3N2 univar Q-Q Plot / logF",
-          x = "Theoretical Quantiles", 
-          y = "Sample Quantiles")+
+          x = NULL, 
+          y = NULL)+
   theme(plot.title = element_text(hjust = 0.5))
 
 ## multivariables lineares model / H3N2
@@ -472,7 +474,7 @@ h3_multi_qq_plot <- ggplot(data = data.frame(resid = residuals(h3_model6)), aes(
   stat_qq_line(color = "red") +
   theme_minimal() +
   labs(   title = "H3N2 multi Q-Q Plot",
-          x = "Theoretical Quantiles", 
+          x = NULL, 
           y = "Sample Quantiles")+
   theme(plot.title = element_text(hjust = 0.5))
 
@@ -486,110 +488,193 @@ h3_multi_lf_qq_plot <- ggplot(data = data.frame(resid = residuals(h3_model6_lf))
   stat_qq_line(color = "red") +
   theme_minimal() +
   labs(   title = "H3N2 multi Q-Q Plot / logF",
-          x = "Theoretical Quantiles", 
-          y = "Sample Quantiles")+
+          x = NULL, 
+          y = NULL)+
   theme(plot.title = element_text(hjust = 0.5))
 
-
-#Vergleiche --> adjustet R2, Residuals, AIC
-
-## repeated measures model
-####
-###
-
-# residuals plot, qq plot
-
-# linear regression of baseline titer only in controls - change baseline-dataset for analysis before
-#microneut_analysis_raw <- microneut_analysis_raw %>% 
-#  filter(pat_group == "Control")
+sumplot_qq_uni <- (h3_uni_qq_plot + h3_uni_lf_qq_plot) / (h1_uni_qq_plot + h1_uni_lf_qq_plot) / ((b_uni_qq_plot + b_uni_lf_qq_plot))
+sumplot_qq_multi <- (h3_multi_qq_plot + h3_multi_lf_qq_plot) / (h1_multi_qq_plot + h1_multi_lf_qq_plot) / ((b_multi_qq_plot + b_multi_lf_qq_plot))
 
 
 #### Checking if homoscedasticity is given (constant scattering of residuals independant of baseline)
-###H3-Strain
+###H3N1-Strain
 # Remove NAs to ensure matching rows
 h3_foldbase_clean <- hi3_foldbase %>% drop_na(H3_base_log2, H3_fold_log2)
 
 # Fit linear model
-adj_model_h3 <- lm(H3_fold_log2 ~ H3_base_log2, data = h3_foldbase_clean)
+h3_model5 <- lm(H3_fold_log2 ~ H3_base_log2, data = h3_foldbase_clean)
+h3_model5_lf <- lm(H3_fold_log2first ~ H3_base_log2, data = h3_foldbase_clean)
 
-# Check for homoscedasticity using residuals vs fitted values plot
-h3_residuals_plot <- ggplot(data = h3_foldbase_clean, aes(x = fitted(adj_model_h3), y = resid(adj_model_h3))) +
+## Check for homoscedasticity using residuals vs fitted values plot
+h3_residuals_plot <- ggplot(data = h3_foldbase_clean, aes(x = fitted(h3_model5), y = resid(h3_model5))) +
   geom_point() +
   geom_smooth(method = "loess", se = FALSE, linetype = "dashed") +
-  labs(x = "Fitted Values", y = "Residuals") +
+  labs(x = "Fitted Values", y = "Residuals",
+       title = "H3N1 univariable model") +
+  #ggtitle("H3 Residuals vs Fitted Values") +
+  theme_minimal()
+
+#log first
+h3_residuals_plot_lf <- ggplot(data = h3_foldbase_clean, aes(x = fitted(h3_model5_lf), y = resid(h3_model5_lf))) +
+  geom_point() +
+  geom_smooth(method = "loess", se = FALSE, linetype = "dashed") +
+  labs(x = "Fitted Values", y = NULL,
+       title = "H3N1 univariable model - LogF") +
   #ggtitle("H3 Residuals vs Fitted Values") +
   theme_minimal()
 
 # Perform Breusch-Pagan test to check for homoscedasticity
-durbinWatsonTest(adj_model_h3)
-bp_test_h3 <- ncvTest(adj_model_h3)
+durbinWatsonTest(h3_model5)
+bp_test_h3 <- ncvTest(h3_model5)
 print(bp_test_h3)
 
-# QQ-Plot of residuals from a regression model
-h3_qq_plot <- ggplot(data = data.frame(resid = residuals(adj_model_h3)), aes(sample = resid)) +
-  stat_qq() +
-  stat_qq_line(color = "red") +
-  theme_minimal() +
-  labs(x = "Theoretical Quantiles", y = "Sample Quantiles")
+durbinWatsonTest(h3_model5_lf)
+bp_test_h3_lf <- ncvTest(h3_model5_lf)
+print(bp_test_h3_lf)
 
-###H3-Strain
+###H1N1-Strain
 # Remove NAs to ensure matching rows
 h1_foldbase_clean <- hi1_foldbase %>% drop_na(H1_base_log2, H1_fold_log2)
 
-# Fit linear model
-adj_model_h1 <- lm(H1_fold_log2 ~ H1_base_log2, data = h1_foldbase_clean)
-
 # Check for homoscedasticity using residuals vs fitted values plot
-h1_residuals_plot <- ggplot(data = h1_foldbase_clean, aes(x = fitted(adj_model_h1), y = resid(adj_model_h1))) +
+h1_residuals_plot <- ggplot(data = h1_foldbase_clean, aes(x = fitted(h1_model1), y = resid(h1_model1))) +
   geom_point() +
   geom_smooth(method = "loess", se = FALSE, linetype = "dashed") +
-  labs(x = "Fitted Values", y = "Residuals") +
+  labs(x = NULL, y = "Residuals",
+       title = "H1N1 univariable model") +
+  #ggtitle("H1 Residuals vs Fitted Values") +
+  theme_minimal()
+
+#log first
+h1_residuals_plot_lf <- ggplot(data = h1_foldbase_clean, aes(x = fitted(h1_model1_lf), y = resid(h1_model1_lf))) +
+  geom_point() +
+  geom_smooth(method = "loess", se = FALSE, linetype = "dashed") +
+  labs(x = NULL, y = NULL,
+       title = "H1N1 univariable model - LogF") +
   #ggtitle("H1 Residuals vs Fitted Values") +
   theme_minimal()
 
 # Perform Breusch-Pagan test to check for homoscedasticity
-durbinWatsonTest(adj_model_h1)
-bp_test_h1 <- ncvTest(adj_model_h1)
+durbinWatsonTest(h1_model1)
+bp_test_h1 <- ncvTest(h1_model1)
 print(bp_test_h1)
 
-# QQ-Plot of residuals from a regression model
-h1_qq_plot <- ggplot(data = data.frame(resid = residuals(adj_model_h1)), aes(sample = resid)) +
-  stat_qq() +
-  stat_qq_line(color = "red") +
-  theme_minimal() +
-  labs(x = "Theoretical Quantiles", y = "Sample Quantiles")
+durbinWatsonTest(h1_model1_lf)
+bp_test_h1_lf <- ncvTest(h1_model1_lf)
+print(bp_test_h1_lf)
 
 ###B-Strain
 # Remove NAs to ensure matching rows
 b_foldbase_clean <- b_foldbase %>% drop_na(Vic_base_log2, Vic_fold_log2)
 
-# Fit linear model
-adj_model_b <- lm(Vic_fold_log2 ~ Vic_base_log2, data = b_foldbase_clean)
-
 # Check for homoscedasticity using residuals vs fitted values plot
-b_residuals_plot <- ggplot(data = b_foldbase_clean, aes(x = fitted(adj_model_b), y = resid(adj_model_b))) +
+b_residuals_plot <- ggplot(data = b_foldbase_clean, aes(x = fitted(b_model1), y = resid(b_model1))) +
   geom_point() +
   geom_smooth(method = "loess", se = FALSE, linetype = "dashed") +
-  labs(x = "Fitted Values", y = "Residuals") +
-  ggtitle("Residuals vs Fitted Values") +
+  labs(x = "Fitted Values", y = "Residuals",
+       title = "B Victoria univariable model") +
+  theme_minimal()
+
+#Lof first
+b_residuals_plot_lf <- ggplot(data = b_foldbase_clean, aes(x = fitted(b_model1_lf), y = resid(b_model1_lf))) +
+  geom_point() +
+  geom_smooth(method = "loess", se = FALSE, linetype = "dashed") +
+  labs(x = NULL, y = NULL,
+       title = "B Victoria univariable model - LogF") +
   theme_minimal()
 
 # Perform Breusch-Pagan test to check for homoscedasticity
-durbinWatsonTest(adj_model_b)
-bp_test_b <- ncvTest(adj_model_b)
+dw_b <- durbinWatsonTest(b_model1)
+bp_test_b <- ncvTest(b_model1)
 print(bp_test_b)
 
+durbinWatsonTest(b_model1)
+bp_test_b_lf <- ncvTest(b_model1)
+print(bp_test_b_lf)
 
-# QQ-Plot of residuals from a regression model
-b_qq_plot <- ggplot(data = data.frame(resid = residuals(adj_model_b)), aes(sample = resid)) +
-  stat_qq() +
-  stat_qq_line(color = "red") +
-  theme_minimal() +
-  labs(title = "QQ-Plot of Residuals", x = "Theoretical Quantiles", y = "Sample Quantiles")
-
+# Combining RR-Plots
+residplot_combined <- (b_residuals_plot + b_residuals_plot_lf) / (h1_residuals_plot + h1_residuals_plot_lf) / (h3_residuals_plot + h3_residuals_plot_lf)
 
 ###combining regression plots
-linreg_plot_test_combined = ((b_linreg_plot_baselog2 + b_residuals_plot + b_qq_plot) /
-                      (hi1_linreg_plot_baselog2 + h1_residuals_plot + h1_qq_plot) / 
-                      (hi3_linreg_plot_baselog2 + h3_residuals_plot + h3_qq_plot))
+#linreg_plot_test_combined = ((b_linreg_plot_baselog2 + b_residuals_plot + b_qq_plot) /
+     #                 (hi1_linreg_plot_baselog2 + h1_residuals_plot + h1_qq_plot) / 
+     #                 (hi3_linreg_plot_baselog2 + h3_residuals_plot + h3_qq_plot))
+
+
+
+# Create a dataframe with Breusch-Pagan and Durbin-Watson test results
+# Extract Breusch-Pagan p-values
+bp_pvalues <- c(
+  bp_test_b$p, 
+  bp_test_b_lf$p, 
+  bp_test_h1$p, 
+  bp_test_h1_lf$p, 
+  bp_test_h3$p, 
+  bp_test_h3_lf$p
+)
+
+# Extract Durbin-Watson statistics
+dw_stat <- c(as.numeric(durbinWatsonTest(b_model1)[2]),
+             as.numeric(durbinWatsonTest(b_model1_lf)[2]),
+             as.numeric(durbinWatsonTest(h1_model1)[2]),
+             as.numeric(durbinWatsonTest(h1_model1_lf)[2]),
+             as.numeric(durbinWatsonTest(h3_model5)[2]),
+             as.numeric(durbinWatsonTest(h3_model5_lf)[2]))
+
+
+# Create summary table
+bp_dw_results <- data.frame(
+  Strain = c("B", "B", "H1N1", "H1N1", "H3N2", "H3N2"),
+  Model = c("Univariable", "Univariable log2 first", 
+            "Univariable", "Univariable log2 first",
+            "Univariable", "Univariable log2 first"),
+  Breusch_Pagan_p_value = round(bp_pvalues, 4),
+  Durbin_Watson_statistic = round(dw_stat, 3)
+)
+
+# View the table
+print(bp_dw_results)
+
+
+##### Compare univariant models (Adjustet R2, Estimates, P values)
+#Put  models in a list:
+models_uni_comb <- list(
+  model_b = b_model1,
+  b_logfirst = b_model1_lf,
+  model_h1n1 = h1_model1,
+  h1n1_logfirst = h1_model1_lf,
+  model_h3n2 = h3_model5,
+  h3n2_logfirst = h3_model5_lf
+)
+#Loop through models and extract info:
+result_list <- lapply(names(models_uni_comb), function(name) {
+  model <- models_uni_comb[[name]]
+  sum_model <- summary(model)
+  
+  # Find the coefficient name containing "_base_log2"
+  coef_name <- grep("_base_log2", rownames(sum_model$coefficients), value = TRUE)
+  
+  data.frame(
+    Model = name,
+    Base_Titer_Estimate = sum_model$coefficients[coef_name, "Estimate"],
+    P_value = sum_model$coefficients[coef_name, "Pr(>|t|)"],
+    Adjusted_R2 = sum_model$adj.r.squared,
+    Multiple_R2 = sum_model$r.squared,
+    AIC = AIC(model)
+  )
+})
+
+model_results <- do.call(rbind, result_list)
+model_results$P_value <- formatC(model_results$P_value, digits = 6, format = "f")
+
+# Create the table (nice looking)
+model_results_nice <- model_results %>%
+  kable("html", digits = 4, align = rep('c', ncol(model_results))) %>%
+  kable_styling(full_width = FALSE) %>%
+  row_spec(seq(2, nrow(model_results), by = 2), extra_css = "border-bottom: 2px solid black;")
+
+
+## repeated measures model
+####
+###
 

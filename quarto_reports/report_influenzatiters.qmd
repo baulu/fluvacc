@@ -36,7 +36,7 @@ plot_hai_comb_group_wide
 plot_ic50_comb_group_wide
 ```
 
-# Correlation of Baseline Titers with Fold-Changes
+# Correlation of Microneutralisation Baseline Titers with Fold-Changes
 
 ```{r}
 #| include: false
@@ -45,17 +45,21 @@ source(here::here("scripts", "03_baseline_titers_assessment.R"))
 
 ## Different linear regression models to assess optimal way to adjust for basline titers
 
-1)  log2 Fold-Changes (y-axis) and untransformed vs. log2-transformed baseline titers
+### log2 Fold-Changes (y-axis) and untransformed vs. log2-transformed baseline titers
 
 ```{r}
 linreg_plot_comb
 ```
 
-2)  log2 Fold-Changes vs. log2 first Fold-Changes (y-axis) and log2-transformed baseline titers
+**Interpretation**: log2 transformed baseline titers leading to better fitting linear models
+
+### log2 Fold-Changes vs. log2 first Fold-Changes (y-axis) and log2-transformed baseline titers
 
 ```{r}
 linreg_plot_comb2
 ```
+
+**Interpretation**: "log2 first transformed" Fold-changes leading to better fitting linear models
 
 ## Comparing correlation of Microneutralisation Fold Changes to baseline titers with used different models
 
@@ -77,44 +81,57 @@ corh3_comb
 corb_comb
 ```
 
---\> base_log2 vs. log2 first has the highest correlation coefficient for all 3 strains. log2 or log10 gives same results. Seems most appropriate to use this for linear regressions.
+**Interpretation:** model with base_log2 vs. log2first fold changes has the highest correlation coefficient for all 3 strains. log2 or log10 gives same results. Seems most appropriate to use log2 first fold-change models for linear regressions.
 
-# Assessing Linear Regression Models & Residuals
+# Assessing Linearity Asumption for Regression Models
 
-QQ plots from multivariant regression models for all strains - comparing log2 and log2 first (predictors: age, sex, group, baseline titers)
+## QQ Plots plots from univariant regression models for all strains - comparing fold-changes log2 and log2 first
+
 ```{r}
 sumplot_qq_uni
 ```
 
-QQ plots from multivariant regression models for all strains - comparing log2 and log2 first (predictors: age, sex, group, baseline titers)
-```{r}
-sumplot_qq_multi
-```
+**Interpretation**: Visually ok-ish looking qq-plots. Some divergence from assumed normal-distribution for lowest- and highest values. No relevant difference between log2 and log2first models.
 
-
+## Check for homoscedasticity using residuals vs fitted values plot
 
 ```{r}
-linreg_plot_test_combined
+residplot_combined
 ```
+
+**Interpretation**: visually no relevant concearns about heteroscedasticity in the regression models. Log2 vs. Log2 first noch visually different.
+
+##Look at autocorrelation (Durbin Whatson Test) and heteroscedasticity (Beusch-pagan test)
+
+```{r}
+bp_dw_results
+```
+
+**Interpretation**:
+
+-   Relevant (high-moderate) Heteroscedasticity, with relevant impact of log2 first approach in the case of H1N1 (worse)
+
+-   some Autocorrelation, but not hugely bothering. No relevant impact of log2 vs. log2first
+
+## Compare Adjusted R2, AIC and Estimates of models (log2 vs. log2 first Fold Change)
+
+```{r}
+model_results_nice
+```
+
+**Interpretation**:
+
+-   Raw models show larger (absolute) effect sizes, but poorer model fit and much worse AIC. To clarify how log2 transformed Fold changes should be backtransformed (log2 vs. log2 first) - likely most of the difference in effect sizes are due to the way fold-changes are log-transformed.
+
+-   Log2-first models reduce the effect size (see above), but greatly improve model fit (R²) and model quality (AIC).
 
 # Correlation of HAI and Microneutralisation Assays
-
 ```{r}
 #| include: false
 source(here::here("scripts", "04_hai_vs_microneut.R"))
 ```
 
 ```{r}
-ggplot(data=df3, aes(x=hai_rank, y=ic50_rank)) +
-  geom_point(size = 2, alpha = 0.5) +
-  geom_smooth(method = "lm", se = TRUE) +
-  annotate("text",
-           x = Inf, y = -Inf,
-           hjust = 1.1, vjust = -0.7,
-           label = paste0("Spearman ρ = ", rho, "\nP = ", pval),
-           size = 4) +
-  labs(title = "Rank Correlation: HAI vs IC50",
-       x = "HAI Rank",
-       y = "IC50 Rank") +
-  theme_minimal()
+hai_vs_ic50_ranksumplot
 ```
+**Interpretation**: Moderate - strong association between HAI and Microneutralisation assays with an spearman rho of 0.69. (CAVE: ranking only within the same strains, but result not much different if done otherwise - rho 0.66)
