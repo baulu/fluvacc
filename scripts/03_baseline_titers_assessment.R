@@ -348,7 +348,7 @@ b_foldbase_meta <- b_foldbase %>%
   left_join(basefile_withPID)
 
 b_model2 <- lm(Vic_fold_log2 ~ Vic_base_log2 + gen_age + as.factor(gen_sex) + as.factor(study_group), data = b_foldbase_meta)
-summary(b_model2) # +Age, sex (als factor), gruppe (als factor)
+sum_b_model2 <- summary(b_model2) # +Age, sex (als factor), gruppe (als factor)
 
 #qq plot
 b_multi_qq_plot <- ggplot(data = data.frame(resid = residuals(b_model2)), aes(sample = resid)) +

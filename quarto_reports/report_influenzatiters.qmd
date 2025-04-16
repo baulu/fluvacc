@@ -83,9 +83,9 @@ corb_comb
 
 **Interpretation:** model with base_log2 vs. log2first fold changes has the highest correlation coefficient for all 3 strains. log2 or log10 gives same results. Seems most appropriate to use log2 first fold-change models for linear regressions.
 
-# Assessing Linearity Asumption for Regression Models
+# Assessing Linearity Asumption for Regression Models (FoldChange - baselineTiters)
 
-## QQ Plots plots from univariant regression models for all strains - comparing fold-changes log2 and log2 first
+## QQ Plots plots from univariant regression models for all strains - comparing fold-changes log2 and log2 first FC
 
 ```{r}
 sumplot_qq_uni
@@ -121,11 +121,51 @@ model_results_nice
 
 **Interpretation**:
 
--   Raw models show larger (absolute) effect sizes, but poorer model fit and much worse AIC. To clarify how log2 transformed Fold changes should be backtransformed (log2 vs. log2 first) - likely most of the difference in effect sizes are due to the way fold-changes are log-transformed.
+-   Log2 FC models show larger (absolute) effect sizes, but poorer model fit and much worse AIC. But log2first seem not sensitivie to do as it is unclear how these values can be backtransformed(ToClarify).
 
--   Log2-first models reduce the effect size (see above), but greatly improve model fit (R²) and model quality (AIC).
+-   Log2-first models reduce the effect size (see above), but have improved model fit (R²) and model quality (AIC).
+
+# Multivariant models for microneutralisation fold-changes
+foldchange vs. log2 baseline model
+```{r}
+sum_b_model2
+```
+```{r}
+#| include: false
+source(here::here("scripts", "05_micneut_basecorrect_beyer04.R"))
+```
+log2 corrected_outcome titers vs. log2 baseline model
+```{r}
+sum_b_model4
+```
+
+# Correction of outcome titers by linear regression according to beyer et.al. 2004
+
+-   Formula:\
+    outcome_titers_corrected = log2(outcome_titers) - slope \* (log2(baseline_titers) - baseline_constant)
+
+-   Where:
+
+    -   baseline_constant = baseline_value to which outcomes are corrected (log2(39) for seronegative)
+
+    -   slope: taken from linear regression model
+
+        -   lm(log2(outcome_titers) \~ log2(baseline_titers))
+        
+```{r}
+#| include: false
+source(here::here("scripts", "05_micneut_basecorrect_beyer04.R"))
+```
+
+```{r}
+b_titers_uncorrected
+```
+```{r}
+b_titers_corrected
+```
 
 # Correlation of HAI and Microneutralisation Assays
+
 ```{r}
 #| include: false
 source(here::here("scripts", "04_hai_vs_microneut.R"))
@@ -134,4 +174,5 @@ source(here::here("scripts", "04_hai_vs_microneut.R"))
 ```{r}
 hai_vs_ic50_ranksumplot
 ```
+
 **Interpretation**: Moderate - strong association between HAI and Microneutralisation assays with an spearman rho of 0.69. (CAVE: ranking only within the same strains, but result not much different if done otherwise - rho 0.66)

@@ -74,7 +74,7 @@ rho <- round(spearman$estimate, 2)
 pval <- format.pval(spearman$p.value, digits = 3, eps = .001)
 
 
-ggplot(data=df3, aes(x = hai_rank, y = ic50_rank)) +  # Factorize Sampling_number for distinct boxplots
+hai_vs_ic50_ranksumplot <- ggplot(data=df3, aes(x = hai_rank, y = ic50_rank)) +  # Factorize Sampling_number for distinct boxplots
   geom_jitter( size = 2, alpha = 0.5) +  # Add jittered points
   geom_smooth(method = "lm", se = TRUE) +   # Add regression line with confidence interval
   annotate("text",
