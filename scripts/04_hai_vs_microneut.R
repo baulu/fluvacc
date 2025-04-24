@@ -11,12 +11,10 @@ library(here)
 library(lubridate)
 library(openxlsx)
 library(ggplot2)
-library(stringr)
-library(readr)
-library(scales)
 library(patchwork)
 library(ggpubr)
 library(car)
+library(broom)
 
 #load data
 microneut_analysis_raw  <- read.xlsx(here::here("processed", "microneut_analysis_raw.xlsx"))
@@ -37,7 +35,7 @@ hai_analysis_raw_p <- hai_analysis_raw %>% #CAVE: USED IN OTHER SCRIPTS - e.g. 0
   pivot_longer(cols = 3:6, names_to = "strain", values_to = "result")  
 
 
-#harmonize dataset for analysis - same vraiables, row_append hai
+#harmonize dataset for analysis - same variables, row_append hai
 influenza_antibody_harmonised <- microneut_analysis_raw_p %>% 
   mutate(strain = case_when( strain == "H1" ~ "H1N1",
                              strain == "H3" ~ "H3N2",
@@ -46,8 +44,34 @@ influenza_antibody_harmonised <- microneut_analysis_raw_p %>%
   select(pat_group, Sampling_number, strain, result = ic50, type, PID) %>%  
   rows_append(hai_analysis_raw_p %>% mutate(type = "hai")) %>% print()
 
+tf <- influenza_antibody_harmonised %>% 
+  filter(type == "ic50_microneutr") %>% 
+  select(pat_group, Sampling_number, strain, ic50res = result, PID, type)
 
-#rank values by strain and type(Hai vs. Microneut) for correlation - ranking only within the same strain
+tf2 <- influenza_antibody_harmonised %>% 
+  filter(type == "hai") %>% 
+  select(pat_group, Sampling_number, strain, haires = result, PID, type)
+
+tf3 <- tf2 %>%  
+  left_join(tf, by = join_by(PID, pat_group, Sampling_number, strain))  %>% 
+  filter(!is.na(ic50res)) %>% 
+  select(pat_group, Sampling_number, strain, haires, PID, ic50res)
+
+#using corr by strain
+strain_corrs <- tf3 %>%
+  group_by(strain) %>%
+  summarise(
+    cor_result = list(cor.test(haires, ic50res, method = "spearman")),
+    .groups = "drop"
+  )
+
+#print correlation table
+strain_corrs_tidy <- strain_corrs %>%
+  mutate(tidy_result = lapply(cor_result, broom::tidy)) %>%
+  unnest(tidy_result) %>%
+  select(strain, estimate, statistic, p.value, method)
+
+#rank values by strain and type(Hai vs. Microneut) for visual linear correlation - ranking only within the same strain
 influenza_antibody_ranked <- influenza_antibody_harmonised %>% 
   group_by(type, strain) %>% 
   mutate(rank_result = rank(result)) %>%
@@ -65,41 +89,13 @@ df2 <- influenza_antibody_ranked %>%
 df3 <- df2 %>%  
   left_join(df, by = join_by(PID, pat_group, Sampling_number, strain))
 
-ggplot(data=df3, aes(x=hai_rank, y=ic50_rank)) +
-  geom_point(size = 2, alpha = 0.5)+
-  geom_smooth(method = "lm", se = TRUE)   # Add regression line with confidence interval
-
-spearman <- cor.test(df3$hai_rank, df3$ic50_rank, method = "spearman")
-rho <- round(spearman$estimate, 2)
-pval <- format.pval(spearman$p.value, digits = 3, eps = .001)
-
-
-hai_vs_ic50_ranksumplot <- ggplot(data=df3, aes(x = hai_rank, y = ic50_rank)) +  # Factorize Sampling_number for distinct boxplots
-  geom_jitter( size = 2, alpha = 0.5) +  # Add jittered points
-  geom_smooth(method = "lm", se = TRUE) +   # Add regression line with confidence interval
-  annotate("text",
-           x = Inf, y = -Inf,
-           hjust = 1.1, vjust = -0.7,
-           label = paste0("Spearman ρ = ", rho, "\nP = ", pval),
-           size = 4) +
+hai_vs_ic50_ranksumplot <- ggplot(data = df3, aes(x = hai_rank, y = ic50_rank)) +
+  geom_jitter(aes(color = strain), size = 2, alpha = 0.5) +  # Correct jitter + color mapping
+  geom_smooth(aes(color = strain), method = "lm", se = TRUE) +   # Optional: consistent regression line
   labs(title = "Rangsummenkorrelation: HAI vs IC50",
        x = "HAI Rank",
-       y = "IC50 Rank") +
+       y = "IC50 Rank",
+       color = "Strain") +
   theme_minimal()
 
-#alternative approach using corr (ranking across strains)
-tf <- influenza_antibody_harmonised %>% 
-  filter(type == "ic50_microneutr") %>% 
-  select(pat_group, Sampling_number, strain, ic50res = result, PID, type)
-
-tf2 <- influenza_antibody_harmonised %>% 
-  filter(type == "hai") %>% 
-  select(pat_group, Sampling_number, strain, haires = result, PID, type)
-
-tf3 <- tf2 %>%  
-  left_join(tf, by = join_by(PID, pat_group, Sampling_number, strain))  %>% 
-  filter(!is.na(ic50res)) %>% 
-  select(pat_group, Sampling_number, strain, haires, PID, ic50res)
-
-corr <- cor.test(x=tf3$haires, tf3$ic50res, method = 'spearman')
 

@@ -1,7 +1,7 @@
 #Index
 # 1) Load libraries and data 
 # 2) Correlation of baseline titers with fold-changes of microneutralisation titers
-    # 2b) lineare regression, modelle
+    # 2b) lineare regression, model
 # 3) Correlation of HAI and microneutralisation assays
 
 # 1) -------------------------------------------------------------------------------------------------------------------

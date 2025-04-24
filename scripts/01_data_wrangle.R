@@ -6,6 +6,8 @@
     # "basefile_withPID"
     # "basefile_noPID"
 # 4) Metadata file for Francis Crick
+  #.4b) file for transcriptomics with ids, dates and visitnumbers
+    # fluvac_pbmc_id_dates
 # 5) Analysis of PBMC samples in Biobank
 # 6) HAI Dataset 
     # "hai_analysis_raw"
@@ -21,7 +23,7 @@ library(tidyr)
 library(haven)
 library(here)
 library(lubridate)
-library (openxlsx)
+library(openxlsx)
 library(ggplot2)
 library(stringr)
 library(readr)
@@ -49,7 +51,10 @@ microneut_results_raw <- read_csv("data/final_results_microneut_2025-02-20_FluVa
   mutate(across(c(`FluB/Vic_ic50`), ~ ifelse(is.na(.), 39, .))) 
 hai_results_raw <- read_csv2("data/FluVacc_HAI_samples_QRcodes.csv")
 send_items_pbmc <- read.csv2("data/provisorisch/PBMCs_forSend.csv") 
-
+samples_pbmc_nometa <- readLines("data//fluvacc_samples_transcriptomics.txt") %>% 
+  as.data.frame()%>%
+  setNames("CryotubeID")
+  
 
 #2) Create PID-file with Serum samples for later HAI/Microneut.-Results
 joint_file <- send_items %>% #148 Subjects
@@ -92,7 +97,7 @@ write.xlsx(basefile_noPID, file="processed/FluVac_basefile_noPID.xlsx", overwrit
 
 
 
-#4) append patient characteristics to sent-file for Crick institute
+#4a) append patient characteristics to sent-file for Crick institute
 FluVac_HAI_Samples_ext_02_25 <-  joint_file %>% 
   left_join(basefile_withPID, join_by(PID)) %>% 
   group_by(PID) %>%
@@ -105,6 +110,20 @@ FluVac_HAI_Samples_ext_02_25 <-  joint_file %>%
 
 
 write.xlsx(FluVac_HAI_Samples_ext_02_25, file="processed/FluVac_HAI_Samples_ext_02_25.xlsx", overwrite = TRUE, asTable = TRUE)
+
+#4b) append patient characteristics to sent-file for Transcriptomics
+fluvac_pbmc_id_dates <- send_items_pbmc%>% 
+  select(PID = Subject, LabScan, Visit_nr = Timepoint.Check, CryotubeID = CryoID) %>% 
+  left_join(samples_pbmc_nometa %>% mutate(check = TRUE)) %>% 
+  mutate(visitdate = dmy(LabScan)) %>% 
+  filter(check == TRUE) %>% 
+  left_join(pidfile) %>% 
+  select(CryotubeID, patient_id, visitdate, Visit_nr) %>% 
+  print()
+  
+
+write.xlsx(fluvac_pbmc_id_dates, file="processed/fluvac_pbmc_id_dates.xlsx", overwrite = TRUE, asTable = TRUE)
+
 
 #5) #########. PBMC analysis
 joint_file_pbmc <- pidfile %>% #148 -> correct

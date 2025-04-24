@@ -125,20 +125,6 @@ model_results_nice
 
 -   Log2-first models reduce the effect size (see above), but have improved model fit (R²) and model quality (AIC).
 
-# Multivariant models for microneutralisation fold-changes
-foldchange vs. log2 baseline model
-```{r}
-sum_b_model2
-```
-```{r}
-#| include: false
-source(here::here("scripts", "05_micneut_basecorrect_beyer04.R"))
-```
-log2 corrected_outcome titers vs. log2 baseline model
-```{r}
-sum_b_model4
-```
-
 # Correction of outcome titers by linear regression according to beyer et.al. 2004
 
 -   Formula:\
@@ -164,6 +150,24 @@ b_titers_uncorrected
 b_titers_corrected
 ```
 
+# Multivariant models for microneutralisation fold-changes
+```{r}
+#| include: false
+source(here::here("scripts", "03_baseline_titers_assessment.R"))
+```
+foldchange vs. log2 baseline model
+```{r}
+sum_b_model2
+```
+```{r}
+#| include: false
+source(here::here("scripts", "05_micneut_basecorrect_beyer04.R"))
+```
+log2 corrected_outcome titers vs. log2 baseline model
+```{r}
+sum_b_model4
+```
+
 # Correlation of HAI and Microneutralisation Assays
 
 ```{r}
@@ -175,4 +179,12 @@ source(here::here("scripts", "04_hai_vs_microneut.R"))
 hai_vs_ic50_ranksumplot
 ```
 
-**Interpretation**: Moderate - strong association between HAI and Microneutralisation assays with an spearman rho of 0.69. (CAVE: ranking only within the same strains, but result not much different if done otherwise - rho 0.66)
+```{r}
+strain_corrs_tidy
+```
+
+**Interpretation**: Moderate - strong association between HAI and Microneutralisation assays. Lower for H3N2.
+
+# Open Questions
+
+1) Is there a way to backtransform log2first FC? 
