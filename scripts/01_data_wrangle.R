@@ -292,8 +292,17 @@ influenza_antibody_results <- microneut_analysis_raw %>%
          hai_H1N1 = H1N1,  hai_H3N2 = H3N2,  hai_BVic = BVic,  hai_BYam = BYam, 
          hai_H1_fold, hai_H3_fold, hai_BVic_fold, hai_BYam_fold,
          microneut_H1N1_ic50 = FluA_H1_ic50, mirconeut_H3N2_ic50 = FluA_H3_ic50, mirconeut_BVic_ic50 = FluA_Vic_ic50,
-         FluV_H1_fold, FluV_H3_fold, FluV_Vic_fold)
+         FluV_H1_fold, FluV_H3_fold, FluV_Vic_fold) 
+
+influenza_antibody_results_ngs <- influenza_antibody_results %>% 
+  mutate(Titer_type = case_when(Sampling_number == 1 ~ "baseline_titer",
+                                Sampling_number == 2 ~ "outcome_titer",
+                                TRUE ~ NA)) %>% 
+  select(CryotubeID, Pat_ID, pat_group, SamplingDt, Titer_type,
+         hai_H1N1,  hai_H3N2,  hai_BVic,  hai_BYam,
+         microneut_H1N1_ic50, mirconeut_H3N2_ic50, mirconeut_BVic_ic50) 
 
 # Write files
 write.xlsx(influenza_antibody_results, file="processed/influenza_antibody_results.xlsx", overwrite = TRUE, asTable = TRUE)
+write.xlsx(influenza_antibody_results_ngs, file="processed/influenza_antibody_results_ngs.xlsx", overwrite = TRUE, asTable = TRUE)
 

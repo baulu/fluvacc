@@ -137,7 +137,7 @@ model_results_nice
     -   slope: taken from linear regression model
 
         -   lm(log2(outcome_titers) \~ log2(baseline_titers))
-        
+
 ```{r}
 #| include: false
 source(here::here("scripts", "05_micneut_basecorrect_beyer04.R"))
@@ -146,45 +146,87 @@ source(here::here("scripts", "05_micneut_basecorrect_beyer04.R"))
 ```{r}
 b_titers_uncorrected
 ```
+
 ```{r}
 b_titers_corrected
 ```
 
 # Multivariant models for microneutralisation fold-changes
+
 ```{r}
 #| include: false
 source(here::here("scripts", "03_baseline_titers_assessment.R"))
 ```
+
 foldchange vs. log2 baseline model
+
 ```{r}
 sum_b_model2
 ```
+
 ```{r}
 #| include: false
 source(here::here("scripts", "05_micneut_basecorrect_beyer04.R"))
 ```
+
 log2 corrected_outcome titers vs. log2 baseline model
+
 ```{r}
 sum_b_model4
 ```
 
-# Correlation of HAI and Microneutralisation Assays
+# Fold Changes: Different Calculations
 
-```{r}
-#| include: false
-source(here::here("scripts", "04_hai_vs_microneut.R"))
-```
+-   Hot to adjust for baseline differences:
 
-```{r}
-hai_vs_ic50_ranksumplot
-```
+    -   Stratification by similar baseline titers
 
-```{r}
-strain_corrs_tidy
-```
+    -   Regression / Analysis of Covariance
 
-**Interpretation**: Moderate - strong association between HAI and Microneutralisation assays. Lower for H3N2.
+-   Different Outcome measures
+
+    -   Max Titer vs Sum Titer response
+
+    -   Category of Responses (30/70 or 20/80% cut-off for low-/medium-/high responders)
+
+    -   Absolute response categories:
+
+        -   seroprotection rate (for HAI \>1:40)
+
+        -   unadjusted response rate (Fold increase ≥4x)
+
+1\) Global Analyses of Human Immune Variation Reveal Baseline Predictors of Postvaccination Responses, Cell 2014
+
+<http://dx.doi.org/10.1016/j.cell.2014.03.031>
+
+-   maximum FC across viral strains: To take the maximum of individual viruses, we performed standardization by subtracting the median followed by dividing the maximum absolute deviation (MAD) within each virus.
+
+-   adjusted FC: binned subjects based on their maximum baseline titers (across viruses) and then
+
+    -   subtracted the median and
+
+    -   divided by the maximum absolute deviation (MAD) within each bin.
+
+-   high- and low responders (top and bottom 20%)
+
+-   Ref:
+
+    -   Nauta, J. (2011). Statistics in clinical vaccine trials (Heidelberg, Germany: Springer).
+
+    -   Bucasas, K.L., Franco, L.M., Shaw, C.A., Bray, M.S., Wells, J.M., Nin˜o, D., Arden, N., Quarles, J.M., Couch, R.B., and Belmont, J.W. (2011). Early patterns of gene expression correlate with the humoral immune response to inﬂuenza vaccination in humans. J. Infect. Dis. 203, 921–929.
+
+2\) Multicohort analysis reveals baseline transcriptional predictors of influenza vaccination responses, Science Immunology 2017
+
+doi:10.1126/sciimmunol.aal4656.
+
+-   adjusted maximum fold change” (adjMFC):
+
+    -   To help ensure that baseline titers and response fold changes of individual strains were comparable, so that the maximum is meaningful, we standardized titers for each strain at baseline (day 0) by subtracting the median and then scaling by the SD.
+
+    -   We then defined the baseline (relative) titer for each individual as the maximum across standardized baseline values for all strains.
+
+    -   Similarly, we used the same approach to standardize the titer response fold change (usually day 28 over day 0) and called these the MFC. In addition, we applied the inverse normal transformation to the MFC values to avoid extreme skews in the distribution. We next plotted baseline and MFC, and as previously observed, we saw a strong nonlinear inverse correlation between them in all of our data sets. To compute adjMFC (i.e., removing the nonlinear correlations), we binned the individuals based on their baseline titer so that the correlation between baseline and response titers within each bin was not statistically significant, and at the same time, we tried to keep the number of bins as low as possible so that each bin would have a reasonable number of individuals for decorrelation. Typically, two to three bins were used. In some of our cohorts, there were a few outlier individuals with extremely high baseline titers and correspondingly small response fold changes; they were removed from further analysis. For each bin, we computed the decor-related responses (adjMFC) by standardizing the MFC values within each bin, that is, subtracting the median and scaling by the SD. Last, individuals within each cohort were defined as low, moderate, and high responders using percentile cutoffs (7). To accommodate the relatively small number of individuals in some of the cohorts, we defined low, moderate, and high responders as those whose adjMFC was lower than the 30th percentile value, between the 30th and the 70th percentile values, and above the 70th percentile value, respectively. After applying the decorrelation procedure, we also performed a number of diagnostic checks to ensure that our approach had achieved the desired effects. Specifically, we confirmed the following: (i) The correlation between baseline titer and the adjMFC was removed on the basis of the Spearman rank correlation; (ii) at the individual strain level, the correlation between the baseline titer and the response fold change was statistically insignificant (i.e., before aggregation of the individual titer per strain via computing the maximum); (iii) the identity of the strain that contributed to the baseline (or response fold change) maximum did not correlate with adjMFC. In all of the above checks, two variables were considered not correlated if the Spearman correlation P value was greater than 0.1.
 
 # Open Questions
 
-1) Is there a way to backtransform log2first FC? 
+1)  Is there a way to backtransform log2first FC?

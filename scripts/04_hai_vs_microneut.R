@@ -1,6 +1,8 @@
 #Index
 # 1) Load libraries and data 
 # 2) Correlation of HAI and microneutralisation assays
+# 3) Comparing "non-responders" defined by FC <2 and <4 and high/low baseline titers
+    #3b) Preparation for Heatmap plots in quarto file
 
 # 1) -------------------------------------------------------------------------------------------------------------------
 #load libraries
@@ -15,6 +17,7 @@ library(patchwork)
 library(ggpubr)
 library(car)
 library(broom)
+library(forcats)
 
 #load data
 microneut_analysis_raw  <- read.xlsx(here::here("processed", "microneut_analysis_raw.xlsx"))
@@ -98,4 +101,70 @@ hai_vs_ic50_ranksumplot <- ggplot(data = df3, aes(x = hai_rank, y = ic50_rank)) 
        color = "Strain") +
   theme_minimal()
 
+# 3) -------------------------------------------------------------------------------------------------------------------
+###Comparing "responders" 
+#Categorise FC defined by FC <2, 2-4 and >4 and high/low baseline titers
+influenza_folds_categ <-  influenza_antibody_results %>%
+  mutate(across(
+    c(hai_H1_fold, hai_H3_fold, hai_BVic_fold, hai_BYam_fold,
+      FluV_H1_fold, FluV_H3_fold, FluV_Vic_fold),
+    ~ case_when(
+      .x < 2 ~ 1,
+      .x >= 2 & .x < 4 ~ 3,
+      .x >= 4 ~ 4,
+      TRUE ~ 99
+    )
+  )) %>%
+  filter(Sampling_number == 2) %>%
+  select(Pat_ID, pat_group, Sampling_number, SamplingDt,
+         hai_H1_fold, FluV_H1_fold, hai_H3_fold, FluV_H3_fold,
+         hai_BVic_fold, FluV_Vic_fold, hai_BYam_fold) 
 
+# 3b) 
+#Reshape Data to Long Format for Plotting
+influenza_folds_categ_long <- influenza_folds_categ %>%
+  pivot_longer(
+    cols = -c(Pat_ID, Sampling_number, SamplingDt, pat_group),
+    names_to = "Antibody_Type",
+    values_to = "Fold_Category"
+  ) %>% 
+  mutate(Pat_ID = as.character(Pat_ID)) %>% 
+  group_by(Pat_ID) %>% 
+  mutate(totalfold = sum(Fold_Category)) %>% 
+  ungroup() %>% 
+  mutate(
+    Fold_Category = factor(Fold_Category),
+    Pat_ID = fct_reorder(Pat_ID, totalfold, .desc = TRUE)  # Reorder by totalfold (high to low)
+) %>% 
+  mutate(
+    Antibody_Type = factor(
+      Antibody_Type,
+      levels = c("hai_H1_fold", "FluV_H1_fold",
+                 "hai_H3_fold", "FluV_H3_fold",
+                 "hai_BVic_fold", "FluV_Vic_fold",
+                 "hai_BYam_fold")
+    )
+  )
+
+
+influenza_folds_custom <- influenza_folds_categ_long %>%
+  mutate(x = case_when(
+    Antibody_Type == "hai_H1_fold"   ~ 1,
+    Antibody_Type == "FluV_H1_fold"  ~ 1.5,
+    Antibody_Type == "hai_H3_fold"   ~ 3,
+    Antibody_Type == "FluV_H3_fold"  ~ 3.5,
+    Antibody_Type == "hai_BVic_fold" ~ 5,
+    Antibody_Type == "FluV_Vic_fold" ~ 5.5,
+    Antibody_Type == "hai_BYam_fold" ~ 7,
+    TRUE ~ NA_real_
+  ))
+
+x_label_map <- c(
+  "1"   = "H1 (HAI)",
+  "1.5" = "H1 (Micr)",
+  "3"   = "H3 (HAI)",
+  "3.5" = "H3 (Micr)",
+  "5"   = "B/Vic (HAI)",
+  "5.5" = "B/Vic (Micr)",
+  "7"   = "B/Yam (HAI)"
+)

@@ -1,0 +1,82 @@
+---
+title: "FluVacc_HAI_vs_Microneut"
+author: "Lukas Baumann, 14.04.2025"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    code-fold: true
+    code-summary: "Show Code"
+    warning: false
+    echo: false
+execute:
+  cache: false   
+editor: visual
+---
+
+# Correlation of HAI and Microneutralisation Assays
+
+```{r}
+#| include: false
+source(here::here("scripts", "04_hai_vs_microneut.R"))
+```
+
+```{r}
+#| warning: false
+hai_vs_ic50_ranksumplot
+```
+
+```{r}
+strain_corrs_tidy
+```
+
+**Interpretation**: Moderate - strong association between HAI and Microneutralisation assays. Lower for H3N2.
+
+# Heatmaps
+
+```{r, fig.width=12, fig.height=25}
+ggplot(influenza_folds_custom, aes(x = x, y = Pat_ID, fill = Fold_Category)) +
+  geom_tile(color = "white", width = 0.6) +
+  scale_fill_manual(
+    values = c("1" = "red", "3" = "orange", "4" = "green", "99" = "grey"),
+    name = "Fold Category",
+    labels = c("1" = "<2-fold", "3" = "2–4-fold", "4" = "≥4-fold", "99" = "Other")
+  ) +
+  scale_x_continuous(
+    breaks = as.numeric(names(x_label_map)),
+    labels = x_label_map
+  ) +
+  labs(x = "Assay Type", y = "Patient ID") +
+  coord_fixed(ratio = 0.3) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 10)
+  )
+
+```
+
+```{r, fig.width=12, fig.height=20}
+ggplot(influenza_folds_custom, aes(x = x, y = Pat_ID, fill = Fold_Category)) +
+  geom_tile(color = "white", width = 0.6) +
+  scale_fill_manual(
+    values = c("1" = "red", "3" = "orange", "4" = "green", "99" = "grey"),
+    name = "Fold Category",
+    labels = c("1" = "<2-fold", "3" = "2–4-fold", "4" = "≥4-fold", "99" = "Other")
+  ) +
+  scale_x_continuous(
+    breaks = as.numeric(names(x_label_map)),
+    labels = x_label_map
+  ) +
+  labs(
+    x = "Assay Type", y = "Patient ID"
+  ) +
+  facet_wrap(~ pat_group, scales = "free_y", ncol = 2) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 10),
+    strip.text = element_text(face = "bold")
+  )
+```
