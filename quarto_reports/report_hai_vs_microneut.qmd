@@ -10,6 +10,15 @@ format:
     code-summary: "Show Code"
     warning: false
     echo: false
+  pdf:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    echo: false
+    warning: false
+    keep-tex: true
+    documentclass: article
+    geometry: margin=1in
 execute:
   cache: false   
 editor: visual
@@ -33,7 +42,19 @@ strain_corrs_tidy
 
 **Interpretation**: Moderate - strong association between HAI and Microneutralisation assays. Lower for H3N2.
 
-# Heatmaps
+# Heatmaps HAI vs. Microneutralisation
+
+-   Categorised by unadjusted titer fold changes and sorted by approximate overall fold change across strains:
+
+-   Categories
+
+    -   Red = "\<2-fold"
+
+    -   Orange = "2–4-fold"
+
+    -   Green = "≥4-fold"
+
+## Overall Heatmap
 
 ```{r, fig.width=12, fig.height=25}
 ggplot(influenza_folds_custom, aes(x = x, y = Pat_ID, fill = Fold_Category)) +
@@ -56,6 +77,8 @@ ggplot(influenza_folds_custom, aes(x = x, y = Pat_ID, fill = Fold_Category)) +
   )
 
 ```
+
+## Faceted by patient group
 
 ```{r, fig.width=12, fig.height=20}
 ggplot(influenza_folds_custom, aes(x = x, y = Pat_ID, fill = Fold_Category)) +
@@ -80,3 +103,126 @@ ggplot(influenza_folds_custom, aes(x = x, y = Pat_ID, fill = Fold_Category)) +
     strip.text = element_text(face = "bold")
   )
 ```
+
+# Overal response across different strains
+## Microneutralisation
+```{r}
+influenza_overall %>%  count(overall_response_micr) %>% 
+  print()
+```
+## HAI
+```{r}
+influenza_overall %>%  count(overall_response_hai) %>% 
+  print()
+```
+
+```{r}
+# Reshape to long format for heatmap
+df_long <- influenza_overall %>%
+  pivot_longer(cols = starts_with("overall_response"), 
+               names_to = "assay", 
+               names_prefix = "overall_response_",
+               values_to = "response")
+
+# Define color category and Add descriptive label mapping
+df_long <- df_long %>%
+  mutate(response_label = case_when(
+    response == "all high" ~ "All high response",
+    response == "all low" ~ "All low response",
+    TRUE ~ "Mixed response"
+  ))
+
+# Create the faceted heatmap
+ggplot(df_long, aes(x = assay, y = Pat_ID, fill = response_label)) +
+  geom_tile(color = "white") +
+  scale_fill_manual(
+    values = c(
+      "All high response" = "green",
+      "Mixed response" = "orange",
+      "All low response" = "red"
+    )
+  ) +
+  facet_wrap(~ pat_group, scales = "free_y") +  # Facet by patient group
+  theme_minimal() +
+  labs(title = "Response across strains - Heatmap by Group",
+       x = "Assay Type",
+       y = "Patient ID",
+       fill = "Response Category") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+# Overal response per strain
+## HAI
+```{r}
+ggplot(data = count_table_response2 %>% filter(assay == "hai")) + 
+  geom_col(aes(y = count, x = strain, fill = fold_category), position = "dodge") +
+  scale_fill_manual(
+    values = c(
+      "low response" = "red",
+      "moderate response" = "orange",
+      "high response" = "green"
+    )
+  ) +
+  labs(title = "HAI Response by Strain",
+       x = "Strain",
+       y = "Count",
+       fill = "Response") +
+  theme_minimal()
+```
+#in percent
+```{r}
+# Plot percentages (filtered to HAI, optional)
+ggplot(data = count_table_response2_percent %>% filter(assay == "hai")) +
+  geom_col(aes(x = strain, y = percentage, fill = fold_category), position = "stack") +
+  scale_fill_manual(
+    values = c(
+      "low response" = "red",
+      "moderate response" = "orange",
+      "high response" = "green"
+    )
+  ) +
+  labs(title = "HAI Response by Strain (as %)",
+       x = "Strain",
+       y = "Percentage",
+       fill = "Response Category") +
+  theme_minimal()
+```
+
+
+## Microneutralisation
+```{r}
+ggplot(data = count_table_response2 %>% filter(assay == "mic")) + 
+  geom_col(aes(y = count, x = strain, fill = fold_category), position = "dodge") +
+  scale_fill_manual(
+    values = c(
+      "low response" = "red",
+      "moderate response" = "orange",
+      "high response" = "green"
+    )
+  ) +
+  labs(title = "HAI Response by Strain",
+       x = "Strain",
+       y = "Count",
+       fill = "Response") +
+  theme_minimal()
+```
+#in percent
+```{r}
+# Plot percentages (filtered to HAI, optional)
+ggplot(data = count_table_response2_percent %>% filter(assay == "mic")) +
+  geom_col(aes(x = strain, y = percentage, fill = fold_category), position = "stack") +
+  scale_fill_manual(
+    values = c(
+      "low response" = "red",
+      "moderate response" = "orange",
+      "high response" = "green"
+    )
+  ) +
+  labs(title = "HAI Response by Strain (as %)",
+       x = "Strain",
+       y = "Percentage",
+       fill = "Response Category") +
+  theme_minimal()
+```
+

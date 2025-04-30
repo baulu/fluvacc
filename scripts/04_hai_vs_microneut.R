@@ -1,8 +1,10 @@
 #Index
 # 1) Load libraries and data 
 # 2) Correlation of HAI and microneutralisation assays
-# 3) Comparing "non-responders" defined by FC <2 and <4 and high/low baseline titers
+# 3) Comparing "response" 
+    #3a) Categorise FC <2 and <4 and high/low baseline titers
     #3b) Preparation for Heatmap plots in quarto file
+    #3c) 
 
 # 1) -------------------------------------------------------------------------------------------------------------------
 #load libraries
@@ -18,6 +20,7 @@ library(ggpubr)
 library(car)
 library(broom)
 library(forcats)
+library(stringr)
 
 #load data
 microneut_analysis_raw  <- read.xlsx(here::here("processed", "microneut_analysis_raw.xlsx"))
@@ -103,7 +106,7 @@ hai_vs_ic50_ranksumplot <- ggplot(data = df3, aes(x = hai_rank, y = ic50_rank)) 
 
 # 3) -------------------------------------------------------------------------------------------------------------------
 ###Comparing "responders" 
-#Categorise FC defined by FC <2, 2-4 and >4 and high/low baseline titers
+# 3) Categorise FC defined by FC <2, 2-4 and >4 and high/low baseline titers
 influenza_folds_categ <-  influenza_antibody_results %>%
   mutate(across(
     c(hai_H1_fold, hai_H3_fold, hai_BVic_fold, hai_BYam_fold,
@@ -168,3 +171,165 @@ x_label_map <- c(
   "5.5" = "B/Vic (Micr)",
   "7"   = "B/Yam (HAI)"
 )
+
+# 3c) 
+influenza_folds_categ_long_str <- influenza_folds_categ_long %>%
+  mutate(
+    strain = case_when(
+      Antibody_Type %in% c("hai_H1_fold", "FluV_H1_fold") ~ "H1",
+      Antibody_Type %in% c("hai_H3_fold", "FluV_H3_fold") ~ "H3",
+      Antibody_Type %in% c("hai_BVic_fold", "FluV_Vic_fold") ~ "B/Victoria",
+      Antibody_Type == "hai_BYam_fold" ~ "B/Yamagata",
+      TRUE ~ "Unknown"
+    )
+  ) %>% 
+  mutate(assay = case_when(
+    Antibody_Type %in% c("hai_H1_fold", "hai_H3_fold", "hai_BVic_fold", "hai_BYam_fold" ) ~ "hai",
+    Antibody_Type %in% c("FluV_H1_fold", "FluV_H3_fold", "FluV_Vic_fold" ) ~ "microneut",
+    TRUE ~ "Unknown"
+  )) 
+
+#calculate assaydif-variable by microneut - hai (giving 0s for no difference, 1/-1 or 2/-2 for one category difference, and 3/-3 for two category difference) 
+influenza_folds_dif  <- influenza_folds_categ_long_str %>% 
+  select(Pat_ID, Fold_Category, assay, strain, Fold_Category) %>% 
+  mutate(Fold_Category= as.character(Fold_Category)) %>% 
+  mutate(Fold_Category= as.numeric(Fold_Category)) %>% 
+  pivot_wider(names_from = assay, values_from = Fold_Category) %>% 
+  mutate(microneut = as.numeric(microneut)) %>% 
+  mutate(hai = as.numeric(hai)) %>% 
+  mutate(assaydif = microneut - hai) %>% 
+  select(Pat_ID, strain, assaydif) %>% 
+  filter(!is.na(assaydif)) %>% 
+  print()
+
+
+influenza_folds_customdif <-  influenza_folds_custom %>% 
+  mutate(strain = case_when(Antibody_Type %in% c("hai_H1_fold", "FluV_H1_fold") ~ "H1",
+      Antibody_Type %in% c("hai_H3_fold", "FluV_H3_fold") ~ "H3",
+      Antibody_Type %in% c("hai_BVic_fold", "FluV_Vic_fold") ~ "B/Victoria",
+      Antibody_Type == "hai_BYam_fold" ~ "B/Yamagata",
+      TRUE ~ "Unknown"
+    ))%>% 
+  left_join(influenza_folds_dif)
+
+
+influenza_overall_hai<- influenza_folds_categ_long_str %>% 
+  select(Pat_ID, pat_group, Fold_Category, strain, assay) %>% 
+  filter(assay == "hai") %>% 
+  group_by(Pat_ID) %>% 
+  count(Fold_Category) %>% 
+  ungroup(Pat_ID) %>% 
+  mutate(fold_category = case_when(Fold_Category == 4 ~ "high",
+                                   Fold_Category == 3 ~ "moderate",
+                                   Fold_Category == 1 ~ "low",
+                                   TRUE ~ "Undefined")) %>% 
+  select(Pat_ID, n, fold_category) %>% 
+  left_join(influenza_folds_categ_long_str %>% select(Pat_ID, pat_group) %>% distinct(Pat_ID, pat_group)) %>% 
+  pivot_wider(names_from = fold_category, values_from = n) %>% 
+  mutate(overall_response_hai = case_when(high == 4 ~ "all high",
+                                      moderate == 4 ~ "all moderate",
+                                      low == 4 ~ "all low",
+                                      !is.na(high) & !is.na(moderate) & is.na(low) ~ "mixed high/moderate",
+                                      is.na(high) & !is.na(moderate) & !is.na(low) ~ "mixed moderate/low",
+                                      !is.na(high) & is.na(moderate) & !is.na(low) ~ "mixed high/low",
+                                      !is.na(high) & !is.na(moderate) & !is.na(low) ~ "mixed all",
+                                      TRUE ~ "Undefined")) %>% print()
+
+influenza_overall_micr<- influenza_folds_categ_long_str %>% 
+  select(Pat_ID, pat_group, Fold_Category, strain, assay) %>% 
+  filter(assay == "microneut") %>% 
+  group_by(Pat_ID) %>% 
+  count(Fold_Category) %>% 
+  ungroup(Pat_ID) %>% 
+  mutate(fold_category = case_when(Fold_Category == 4 ~ "high",
+                                   Fold_Category == 3 ~ "moderate",
+                                   Fold_Category == 1 ~ "low",
+                                   TRUE ~ "Undefined")) %>% 
+  select(Pat_ID, n, fold_category) %>% 
+  left_join(influenza_folds_categ_long_str %>% select(Pat_ID, pat_group) %>% distinct(Pat_ID, pat_group)) %>% 
+  pivot_wider(names_from = fold_category, values_from = n) %>% 
+  mutate(overall_response_micr = case_when(high == 3 ~ "all high",
+                                      moderate == 3 ~ "all moderate",
+                                      low == 3 ~ "all low",
+                                      !is.na(high) & !is.na(moderate) & is.na(low) ~ "mixed high/moderate",
+                                      is.na(high) & !is.na(moderate) & !is.na(low) ~ "mixed moderate/low",
+                                      !is.na(high) & is.na(moderate) & !is.na(low) ~ "mixed high/low",
+                                      !is.na(high) & !is.na(moderate) & !is.na(low) ~ "mixed all",
+                                      TRUE ~ "Undefined")) %>% print()
+
+influenza_overall <-  influenza_overall_micr %>% 
+  select(Pat_ID, pat_group, overall_response_micr) %>% 
+  left_join(influenza_overall_hai) %>% 
+  select(Pat_ID, pat_group,overall_response_hai, overall_response_micr)
+
+influenza_overall %>%  count(overall_response_micr) %>% 
+  print()
+
+#response for different strains
+influenza_folds_customdif_wide <- influenza_folds_customdif %>% 
+  select(Pat_ID, pat_group, Antibody_Type, Fold_Category) %>% 
+  mutate(Fold_Category = as.character(Fold_Category)) %>%  
+  mutate(Fold_Category = as.numeric(Fold_Category)) %>%  
+  pivot_wider(names_from = Antibody_Type, values_from = Fold_Category)  %>% print() 
+ 
+
+count_h1_hai <- influenza_folds_customdif_wide %>% 
+  count(hai_H1_fold) %>% 
+  select(fold_category = hai_H1_fold, H1_HAI = n)
+
+count_h1_mic <- influenza_folds_customdif_wide %>% 
+  count(FluV_H1_fold) %>% 
+  select(fold_category = FluV_H1_fold, H1_mic = n)
+
+count_h3_hai <- influenza_folds_customdif_wide %>% 
+  count(hai_H3_fold) %>% 
+  select(fold_category = hai_H3_fold, H3_HAI = n)
+
+count_h3_mic <- influenza_folds_customdif_wide %>% 
+  count(FluV_H3_fold) %>% 
+  select(fold_category = FluV_H3_fold, H3_mic = n)
+
+count_bvic_hai <- influenza_folds_customdif_wide %>% 
+  count(hai_BVic_fold) %>% 
+  select(fold_category = hai_BVic_fold, BVic_HAI = n)
+
+count_bvic_mic <- influenza_folds_customdif_wide %>% 
+  count(FluV_Vic_fold) %>% 
+  select(fold_category = FluV_Vic_fold, BVic_mic = n)
+
+count_byam_hai <- influenza_folds_customdif_wide %>% 
+  count(hai_BYam_fold) %>% 
+  select(fold_category = hai_BYam_fold, BYam_HAI = n)
+
+count_table_response <-  count_h1_hai %>% 
+  left_join(count_h1_mic) %>% 
+  left_join(count_h3_hai) %>% 
+  left_join(count_h3_mic) %>% 
+  left_join(count_bvic_hai) %>% 
+  left_join(count_bvic_mic) %>% 
+  left_join(count_byam_hai) %>% 
+  mutate(fold_category = as.character(case_when(fold_category == 1 ~ "low response",
+                                                fold_category == 3 ~ "moderate response",
+                                                fold_category == 4 ~ "high response",
+                                                TRUE ~ "undefinded")))
+
+
+count_table_response2 <-count_table_response %>%
+  pivot_longer(cols = 2:8, names_to = "strain", values_to = "count") %>%
+  mutate(assay = case_when(
+    str_detect(strain, "HAI") ~ "hai",
+    str_detect(strain, "mic") ~ "mic",
+    TRUE ~ "undefined"
+  )) %>% 
+  mutate(strain = case_when(
+    str_detect(strain, "H1") ~ "H1",
+    str_detect(strain, "H3") ~ "H3",
+    str_detect(strain, "BVic") ~ "B/Victoria",
+    str_detect(strain, "BYam") ~ "B/Yamagata",
+    TRUE ~ "undefined"
+  )) %>% 
+  mutate(fold_category = factor(fold_category, levels = c("low response", "moderate response", "high response")))
+
+count_table_response2_percent <- count_table_response2 %>%
+  group_by(strain, assay) %>%
+  mutate(percentage = count / sum(count) * 100)
