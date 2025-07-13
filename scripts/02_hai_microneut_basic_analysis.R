@@ -23,7 +23,8 @@ library(car)
 microneut_analysis_raw  <- read.xlsx(here::here("processed", "microneut_analysis_raw.xlsx"))
 hai_analysis_raw  <- read.xlsx(here::here("processed", "hai_analysis_raw.xlsx"))
 influenza_antibody_results <- read.xlsx(here::here("processed", "influenza_antibody_results.xlsx"))
-basefile_withPID <- read.xlsx(here::here("processed", "FluVac_basefile_withPID.xlsx"))
+basefile_withPID <- read.xlsx(here::here("processed", "FluVac_basefile_withPID.xlsx"))basecorrect_categories <- read_csv("data/summary_classification.csv")
+basecorrect_categories <- read_csv("data/summary_classification.csv")
 
 # 2) -------------------------------------------------------------------------------------------------------------------
 ### First look at HAI data

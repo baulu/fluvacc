@@ -42,7 +42,7 @@ pidfile <- read_csv2("data/provisorisch/FluVacc_PIDs.csv") %>%
   mutate(patient_id = as.character(`Pat-ID`))
 send_items <- read_csv2("data/provisorisch/DS5752_VersandUK_Serum_2025-01.csv") %>% 
   mutate(SamplingDt = dmy(SamplingDt))
-biobank_report <- read.csv2("data/provisorisch/Report Study 5752 - FluVacc2025-02-03.csv")# %>% 
+biobank_report <- read.csv2("data/provisorisch/Report Study 5752 - FluVacc2025-05-05.csv")# %>% 
 #  filter(Cryo.Barcode != "FD31518743" & Cryo.Barcode != "FD31518744" & Cryo.Barcode !="FD31518757" & Cryo.Barcode !="FD31518758")# Exlude for empty tubes for FluV_CO_32
 microneut_results_raw <- read_csv("data/final_results_microneut_2025-02-20_FluVacc.csv") %>% 
   mutate(CryotubeID = sample_barcode) %>% 
@@ -125,7 +125,7 @@ fluvac_pbmc_id_dates <- send_items_pbmc%>%
 write.xlsx(fluvac_pbmc_id_dates, file="processed/fluvac_pbmc_id_dates.xlsx", overwrite = TRUE, asTable = TRUE)
 
 
-#5) #########. PBMC analysis
+#5) #########. PBMC analysis - update 05/2025 (after PBMC shipping to the NGS)
 joint_file_pbmc <- pidfile %>% #148 -> correct
   mutate(Subject = PID) %>% 
   left_join(send_items_pbmc, by = join_by(Subject)) %>% 

@@ -19,7 +19,7 @@ editor: visual
 
 ```{r}
 #| include: false
-source(here::here("scripts", "02_hai_microneut_basic_analysis.R"))
+source(here::here("scripts","02_hai_microneut_basic_analysis.R"))
 ```
 
 **Display pre-post vaccine HAI-titers by group and strain**

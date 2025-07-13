@@ -1,11 +1,16 @@
 ---
 title: "FluVacc_HAI_vs_Microneut"
-author: "Lukas Baumann, 14.04.2025"
+author: "Lukas Baumann" 
+date: 2025-06-03
 format:
   html:
     toc: true
     toc-depth: 2
-    number-sections: true
+    theme: cosmo 
+    self-contained: true
+    fontsize: 1.1em
+    linestretch: 1.7
+    number-sections: false
     code-fold: true
     code-summary: "Show Code"
     warning: false
@@ -24,12 +29,55 @@ execute:
 editor: visual
 ---
 
-# Correlation of HAI and Microneutralisation Assays
+# HAI Titers Overview
+
+```{r}
+#| include: false
+source(here::here("scripts", "02_hai_microneut_basic_analysis.R"))
+```
+
+**Display pre-post vaccine HAI-titers by group and strain**
+
+```{r}
+plot_hai_comb_group_wide
+```
+
+# Microneutralisation Titers Overview
+
+**Display pre-post vaccine microneutralisation titers by group and strain**
+
+```{r}
+plot_ic50_comb_group_wide
+```
 
 ```{r}
 #| include: false
 source(here::here("scripts", "04_hai_vs_microneut.R"))
 ```
+
+# Box-plots of uncorrected fold change values
+
+-   y axis is clipped at 50 (outliers above are not shown)
+-   horizontal lines at Fold-changes of 1(red), 2(orange) and 4(green)
+
+```{r}
+influenza_folds_decline %>% 
+  select(strain, assay, fold_change) %>%  # use `value` from pivoted data, not `fold_change`
+  #filter(fold_change < 1) %>%   # <- Filter values below 1
+  #filter(strain != "B/Yam") %>% 
+  mutate(strain = as.factor(strain)) %>% 
+  ggplot(aes(x = strain, y = fold_change, color = strain)) +
+  geom_boxplot() +
+  #geom_dotplot(binaxis = "y", stackdir = "center", dotsize = 0.5) +
+  geom_hline(yintercept = 1, color = "red", linetype = "dashed") +  # <- red line at y = 1
+  geom_hline(yintercept = 2, color = "orange", linetype = "dashed") + 
+  geom_hline(yintercept = 4, color = "green", linetype = "dashed") +  
+  facet_wrap(~ assay) +
+  coord_cartesian(ylim = c(0, 50)) +  # limit visible y-axis range
+  theme_minimal()
+```
+
+# Correlation of HAI and Microneutralisation Assays
 
 ```{r}
 #| warning: false
@@ -42,118 +90,67 @@ strain_corrs_tidy
 
 **Interpretation**: Moderate - strong association between HAI and Microneutralisation assays. Lower for H3N2.
 
-# Heatmaps HAI vs. Microneutralisation
+# Decline in titers (FoldChange \< 1)
 
--   Categorised by unadjusted titer fold changes and sorted by approximate overall fold change across strains:
-
--   Categories
-
-    -   Red = "\<2-fold"
-
-    -   Orange = "2–4-fold"
-
-    -   Green = "≥4-fold"
-
-## Overall Heatmap
-
-```{r, fig.width=12, fig.height=25}
-ggplot(influenza_folds_custom, aes(x = x, y = Pat_ID, fill = Fold_Category)) +
-  geom_tile(color = "white", width = 0.6) +
-  scale_fill_manual(
-    values = c("1" = "red", "3" = "orange", "4" = "green", "99" = "grey"),
-    name = "Fold Category",
-    labels = c("1" = "<2-fold", "3" = "2–4-fold", "4" = "≥4-fold", "99" = "Other")
-  ) +
-  scale_x_continuous(
-    breaks = as.numeric(names(x_label_map)),
-    labels = x_label_map
-  ) +
-  labs(x = "Assay Type", y = "Patient ID") +
-  coord_fixed(ratio = 0.3) +
-  theme_minimal() +
-  theme(
-    axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 10)
-  )
-
+```{r}
+influenza_folds_decline %>% 
+  count(assay, decline) %>% 
+  group_by(assay) %>% 
+  mutate(percentage = n / sum(n) * 100) %>%  
+  print()
 ```
 
-## Faceted by patient group
+--\> 26.9% (Microneutralisation) vs 4.5% (HAI) with declining titers - Unclear
 
-```{r, fig.width=12, fig.height=20}
-ggplot(influenza_folds_custom, aes(x = x, y = Pat_ID, fill = Fold_Category)) +
-  geom_tile(color = "white", width = 0.6) +
-  scale_fill_manual(
-    values = c("1" = "red", "3" = "orange", "4" = "green", "99" = "grey"),
-    name = "Fold Category",
-    labels = c("1" = "<2-fold", "3" = "2–4-fold", "4" = "≥4-fold", "99" = "Other")
-  ) +
-  scale_x_continuous(
-    breaks = as.numeric(names(x_label_map)),
-    labels = x_label_map
-  ) +
+```{r}
+influenza_folds_decline %>% 
+  select(strain, assay, fold_change) %>%  # use `value` from pivoted data, not `fold_change`
+  filter(fold_change < 1) %>%   # <- Filter values below 1
+  filter(strain != "B/Yam") %>% 
+  mutate(strain = as.factor(strain)) %>% 
+  ggplot(aes(x = strain, y = fold_change, color = strain)) +
+  geom_boxplot() +
+  geom_dotplot(binaxis = "y", stackdir = "center", dotsize = 0.5) +
+  facet_wrap(~ assay) +
+  theme_minimal()
+```
+
+Baseline Titer in Patients with declining Fold Changes
+
+```{r}
+influenza_records_declining_titers %>% 
+  filter(assay == "mic") %>% 
+  ggplot(aes(x = decline, y = value, color = decline)) +
+  geom_boxplot() +
+  theme_minimal() +
   labs(
-    x = "Assay Type", y = "Patient ID"
-  ) +
-  facet_wrap(~ pat_group, scales = "free_y", ncol = 2) +
-  theme_minimal() +
-  theme(
-    axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 10),
-    strip.text = element_text(face = "bold")
+    x = "Fold-Change Decline",
+    y = "Microneutralisation Baseline Titer"
   )
 ```
 
-# Overal response across different strains
-## Microneutralisation
-```{r}
-influenza_overall %>%  count(overall_response_micr) %>% 
-  print()
-```
-## HAI
-```{r}
-influenza_overall %>%  count(overall_response_hai) %>% 
-  print()
-```
+# Response per strain
+
+## Response overview
 
 ```{r}
-# Reshape to long format for heatmap
-df_long <- influenza_overall %>%
-  pivot_longer(cols = starts_with("overall_response"), 
-               names_to = "assay", 
-               names_prefix = "overall_response_",
-               values_to = "response")
-
-# Define color category and Add descriptive label mapping
-df_long <- df_long %>%
-  mutate(response_label = case_when(
-    response == "all high" ~ "All high response",
-    response == "all low" ~ "All low response",
-    TRUE ~ "Mixed response"
-  ))
-
-# Create the faceted heatmap
-ggplot(df_long, aes(x = assay, y = Pat_ID, fill = response_label)) +
-  geom_tile(color = "white") +
-  scale_fill_manual(
-    values = c(
-      "All high response" = "green",
-      "Mixed response" = "orange",
-      "All low response" = "red"
-    )
-  ) +
-  facet_wrap(~ pat_group, scales = "free_y") +  # Facet by patient group
-  theme_minimal() +
-  labs(title = "Response across strains - Heatmap by Group",
-       x = "Assay Type",
-       y = "Patient ID",
-       fill = "Response Category") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
+count_table_response2_percent %>% 
+  filter(strain != "B/Yamagata") %>% 
+  ggplot() +
+  geom_col(aes(x = strain, y = percentage, fill = assay),
+           position = position_dodge()) +
+  geom_text(aes(x = strain, y = percentage, label = round(percentage, 1), group = assay),
+            position = position_dodge(width = 0.9),
+            vjust = -0.3, size = 3) +
+  labs(x = "Strain", 
+       y = "Percentage", 
+       fill = "Assay") +
+  facet_wrap(~ fold_category) +
+  theme_minimal()
 ```
 
-# Overal response per strain
-## HAI
+##HAI
+
 ```{r}
 ggplot(data = count_table_response2 %>% filter(assay == "hai")) + 
   geom_col(aes(y = count, x = strain, fill = fold_category), position = "dodge") +
@@ -170,7 +167,9 @@ ggplot(data = count_table_response2 %>% filter(assay == "hai")) +
        fill = "Response") +
   theme_minimal()
 ```
-#in percent
+
+in percent:
+
 ```{r}
 # Plot percentages (filtered to HAI, optional)
 ggplot(data = count_table_response2_percent %>% filter(assay == "hai")) +
@@ -189,8 +188,8 @@ ggplot(data = count_table_response2_percent %>% filter(assay == "hai")) +
   theme_minimal()
 ```
 
-
 ## Microneutralisation
+
 ```{r}
 ggplot(data = count_table_response2 %>% filter(assay == "mic")) + 
   geom_col(aes(y = count, x = strain, fill = fold_category), position = "dodge") +
@@ -201,15 +200,17 @@ ggplot(data = count_table_response2 %>% filter(assay == "mic")) +
       "high response" = "green"
     )
   ) +
-  labs(title = "HAI Response by Strain",
+  labs(title = "Microneutralisation Response by Strain",
        x = "Strain",
        y = "Count",
        fill = "Response") +
   theme_minimal()
 ```
-#in percent
+
+in percent
+
 ```{r}
-# Plot percentages (filtered to HAI, optional)
+# Plot percentages (filtered to mic, optional)
 ggplot(data = count_table_response2_percent %>% filter(assay == "mic")) +
   geom_col(aes(x = strain, y = percentage, fill = fold_category), position = "stack") +
   scale_fill_manual(
@@ -219,10 +220,134 @@ ggplot(data = count_table_response2_percent %>% filter(assay == "mic")) +
       "high response" = "green"
     )
   ) +
-  labs(title = "HAI Response by Strain (as %)",
+  labs(title = "Microneutralisation Response by Strain (as %)",
        x = "Strain",
        y = "Percentage",
        fill = "Response Category") +
   theme_minimal()
 ```
 
+-\> BVictoria and H1N1 with slightly lower response rates
+
+# Heatmaps HAI vs. Microneutralisation
+
+-   Categorised by unadjusted titer fold changes and sorted by approximate overall fold change across strains:
+
+-   Categories
+
+    -   Red = low response = "\<2-fold"
+
+    -   Orange = moderate response = "2–4-fold"
+
+    -   Green = high response = "\> 4-fold"
+
+## Overall Heatmap
+
+```{r, fig.width=12, fig.height=25}
+ggplot(influenza_folds_custom, aes(x = x, y = Pat_ID, fill = Fold_Category)) +
+  geom_tile(color = "white", width = 0.6) +
+  scale_fill_manual(
+    values = c("1" = "red", "3" = "orange", "4" = "green", "99" = "grey"),
+    name = "Fold Category",
+    labels = c("1" = "<2-fold", "3" = "2–4-fold", "4" = ">4-fold", "99" = "Other")
+  ) +
+  scale_x_continuous(
+    breaks = as.numeric(names(x_label_map)),
+    labels = x_label_map
+  ) +
+  labs(x = "Assay Type", y = "Patient ID") +
+  coord_fixed(ratio = 0.3) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 10)
+  )
+
+```
+
+-\> Visually acceptable overlapp in response across strains and assay type with some exceptions.
+
+## Faceted by patient group
+
+```{r, fig.width=12, fig.height=20}
+ggplot(influenza_folds_custom, aes(x = x, y = Pat_ID, fill = Fold_Category)) +
+  geom_tile(color = "white", width = 0.6) +
+  scale_fill_manual(
+    values = c("1" = "red", "3" = "orange", "4" = "green", "99" = "grey"),
+    name = "Fold Category",
+    labels = c("1" = "<2-fold", "3" = "2–4-fold", "4" = ">4-fold", "99" = "Other")
+  ) +
+  scale_x_continuous(
+    breaks = as.numeric(names(x_label_map)),
+    labels = x_label_map
+  ) +
+  labs(
+    x = "Assay Type", y = "Patient ID"
+  ) +
+  facet_wrap(~ pat_group, scales = "free_y", ncol = 2) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 10),
+    strip.text = element_text(face = "bold")
+  )
+```
+
+-\> more low-responders in Onco-group, otherwise visually not clearly different
+
+# Overal response across different strains
+
+## Microneutralisation
+
+```{r}
+influenza_overall %>%  count(overall_response_micr) %>% 
+  print()
+```
+
+## HAI
+
+```{r}
+influenza_overall %>%  count(overall_response_hai) %>% 
+  print()
+```
+
+```{r, fig.width=12, fig.height=20}
+# Reshape to long format for heatmap
+df_long <- influenza_overall %>%
+  pivot_longer(cols = starts_with("overall_response"), 
+               names_to = "assay", 
+               names_prefix = "overall_response_",
+               values_to = "response")
+
+# Define color category and Add descriptive label mapping
+df_long <- df_long %>%
+  mutate(response_label = case_when(
+    response == "all high" ~ "All strains high response",
+    response == "all low" ~ "All strains low response",
+    TRUE ~ "Mixed response"
+  ))
+
+# Create the faceted heatmap
+ggplot(df_long, aes(x = assay, y = Pat_ID, fill = response_label)) +
+  geom_tile(color = "white") +
+  scale_fill_manual(
+    values = c(
+      "All strains high response" = "green",
+      "Mixed response" = "orange",
+      "All strains low response" = "red"
+    )
+  ) +
+  facet_wrap(~ pat_group, scales = "free_y") +  # Facet by patient group
+  theme_minimal() +
+  labs(title = "Overall response across strains - Heatmap by Group",
+       x = "Assay Type",
+       y = "Patient ID",
+       fill = "Response Category") + 
+  theme(
+    axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 10),
+    strip.text = element_text(face = "bold")
+  )
+```
+
+-\> only few patients with only high- or low response across strains. BUT: criterion applied is very strict, as truly all strain-responses need to be \>4 or \<2 to count as "all strains".

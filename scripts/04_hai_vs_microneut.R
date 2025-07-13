@@ -5,6 +5,7 @@
     #3a) Categorise FC <2 and <4 and high/low baseline titers
     #3b) Preparation for Heatmap plots in quarto file
     #3c) 
+#....
 
 # 1) -------------------------------------------------------------------------------------------------------------------
 #load libraries
@@ -21,9 +22,11 @@ library(car)
 library(broom)
 library(forcats)
 library(stringr)
+library(readr)
 
 #load data
 microneut_analysis_raw  <- read.xlsx(here::here("processed", "microneut_analysis_raw.xlsx"))
+microneut_results_originalcrick <- read_csv("data/final_results_microneut_2025-02-20_FluVacc.csv")
 hai_analysis_raw  <- read.xlsx(here::here("processed", "hai_analysis_raw.xlsx"))
 influenza_antibody_results <- read.xlsx(here::here("processed", "influenza_antibody_results.xlsx"))
 basefile_withPID <- read.xlsx(here::here("processed", "FluVac_basefile_withPID.xlsx"))
@@ -333,3 +336,119 @@ count_table_response2 <-count_table_response %>%
 count_table_response2_percent <- count_table_response2 %>%
   group_by(strain, assay) %>%
   mutate(percentage = count / sum(count) * 100)
+
+count_table_response2_percent %>% 
+  filter(strain != "B/Yamagata") %>% 
+  ggplot() +
+  geom_col(aes(x = strain, y = percentage, fill = assay),
+           position = position_dodge()) +
+  geom_text(aes(x = strain, y = percentage, label = round(percentage, 1), group = assay),
+            position = position_dodge(width = 0.9),
+            vjust = -0.3, size = 3) +
+  labs(x = "Strain", 
+       y = "Percentage", 
+       fill = "Assay") +
+  facet_wrap(~ fold_category) +
+  theme_minimal()
+
+## Looking at patients with declining titers
+influenza_folds_decline <- influenza_antibody_results %>%
+  filter(Sampling_number == 2) %>%
+  select(Pat_ID, hai_H1_fold, FluV_H1_fold, hai_H3_fold, FluV_H3_fold,
+         hai_BVic_fold, FluV_Vic_fold, hai_BYam_fold) %>%
+  pivot_longer(cols = 2:8, names_to = "name", values_to = "value") %>%
+  mutate(
+    decline = value < 1,
+    assay = case_when(
+      str_detect(name, "FluV") ~ "mic",
+      str_detect(name, "hai") ~ "hai",
+      TRUE ~ NA_character_
+    ),
+    strain = case_when(
+      str_detect(name, "H1") ~ "H1",
+      str_detect(name, "H3") ~ "H3",
+      str_detect(name, "BVic|Vic") ~ "B/Vic",
+      str_detect(name, "BYam|Yam") ~ "B/Yam",
+      TRUE ~ NA_character_
+    )
+  ) %>% 
+  select(Pat_ID, strain, assay,fold_change = value, decline) 
+
+influenza_baseline_long <- influenza_antibody_results %>% 
+  select(Pat_ID, CryotubeID, pat_group, Sampling_number, hai_H1N1, hai_H3N2, hai_BVic, hai_BYam, microneut_H1N1_ic50, mirconeut_H3N2_ic50, mirconeut_BVic_ic50) %>% 
+  pivot_longer(cols =  5:11) %>% 
+  mutate(
+    assay = case_when(
+      str_detect(name, "microneut|mirconeut") ~ "mic",
+      str_detect(name, "hai") ~ "hai",
+      TRUE ~ NA_character_
+    ),
+    strain = case_when(
+      str_detect(name, "H1") ~ "H1",
+      str_detect(name, "H3") ~ "H3",
+      str_detect(name, "BVic|Vic") ~ "B/Vic",
+      str_detect(name, "BYam|Yam") ~ "B/Yam",
+      TRUE ~ NA_character_
+    )
+  ) %>% 
+  select(Pat_ID, CryotubeID, pat_group, Sampling_number, value, assay, strain)
+
+#Titer set to send to FrancisCrick to crosscheck declining titer-records
+influenza_records_declining_titers <- influenza_folds_decline %>% 
+  left_join(influenza_baseline_long, by = join_by(Pat_ID, strain, assay)) %>% 
+  filter(Sampling_number == 1)
+
+influenza_records_declining_titers_all <- influenza_folds_decline %>% 
+  left_join(influenza_baseline_long, by = join_by(Pat_ID, strain, assay)) %>% 
+  mutate(sample_barcode_pre = case_when(Sampling_number == 1 ~ CryotubeID,
+                                        TRUE ~ NA)) %>% 
+  mutate(sample_barcode_post = case_when(Sampling_number == 2 ~ CryotubeID,
+                                        TRUE ~ NA)) %>% 
+  select(Pat_ID, strain, assay, value, fold_change,Sampling_number, decline, pat_group, sample_barcode_pre, sample_barcode_post) %>% 
+  pivot_wider(names_from = "Sampling_number")  %>%
+  group_by(Pat_ID, strain, assay, fold_change, decline, pat_group) %>%
+  group_by(Pat_ID, strain, assay, fold_change, decline, pat_group) %>%
+  fill(sample_barcode_pre, sample_barcode_post, .direction = "downup") %>%
+  fill(`1`,`2`, .direction = "downup") %>%
+  ungroup() %>% 
+  distinct(Pat_ID, strain, assay, .keep_all = TRUE) %>% 
+  select(strain, assay,sample_barcode_pre, sample_barcode_post, value_pre = `1`, value_post= `2`, fold_change, decline) 
+  
+  
+write.xlsx(influenza_records_declining_titers_all, file="processed/influenza_records_paired_titers_fc.xlsx", overwrite = TRUE, asTable = TRUE)
+
+
+influenza_records_declining_titers2 <- influenza_records_declining_titers %>% 
+  filter(decline == TRUE) %>% 
+  filter(assay == "mic") %>% 
+  select(CryotubeID, strain, assay, fold_change, baseline_titer = value) %>% 
+  mutate(sample_barcode = CryotubeID) %>%
+  left_join(microneut_results_originalcrick %>% select(sample_barcode, workflow_id, well, qr_code)) %>% 
+  select(CryotubeID, sample_barcode, strain, assay, fold_change, baseline_titer,workflow_id, well, qr_code)
+
+
+write.xlsx(influenza_records_declining_titers2, file="processed/influenza_records_declining_titers_fc.xlsx", overwrite = TRUE, asTable = TRUE)
+
+
+
+#Scatter plots of uncorrected FC values - Data
+influenza_folds_Scatter <- influenza_antibody_results %>%
+  filter(Sampling_number == 2) %>%
+  select(Pat_ID, hai_H1_fold, FluV_H1_fold, hai_H3_fold, FluV_H3_fold,
+         hai_BVic_fold, FluV_Vic_fold, hai_BYam_fold) %>%
+  pivot_longer(cols = 2:8, names_to = "name", values_to = "value") %>%
+  mutate(
+    assay = case_when(
+      str_detect(name, "FluV") ~ "mic",
+      str_detect(name, "hai") ~ "hai",
+      TRUE ~ NA_character_
+    ),
+    strain = case_when(
+      str_detect(name, "H1") ~ "H1",
+      str_detect(name, "H3") ~ "H3",
+      str_detect(name, "BVic|Vic") ~ "B/Vic",
+      str_detect(name, "BYam|Yam") ~ "B/Yam",
+      TRUE ~ NA_character_
+    )
+  ) %>% 
+  select(Pat_ID, strain, assay,fold_change = value) 
