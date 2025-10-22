@@ -3,6 +3,7 @@
 # 2) Correlation of baseline titers with fold-changes of microneutralisation titers
     # 2b) lineare regression, model
 # 3) Correlation of HAI and microneutralisation assays
+# 4) ....
 
 # 1) -------------------------------------------------------------------------------------------------------------------
 #load libraries
@@ -27,6 +28,8 @@ microneut_analysis_raw  <- read.xlsx(here::here("processed", "microneut_analysis
 hai_analysis_raw  <- read.xlsx(here::here("processed", "hai_analysis_raw.xlsx"))
 influenza_antibody_results <- read.xlsx(here::here("processed", "influenza_antibody_results.xlsx"))
 basefile_withPID <- read.xlsx(here::here("processed", "FluVac_basefile_withPID.xlsx"))
+basecorrect_categories <- read_csv(here::here("data/summary_classification.csv"))
+
 
 # 2) -------------------------------------------------------------------------------------------------------------------
 ##### assess correlation of microneutralisation fold changes with baseline titer
@@ -677,4 +680,8 @@ model_results_nice <- model_results %>%
 ## repeated measures model
 ####
 ###
+
+# 5)) -------------------------------------------------------------------------------------------------------------------
+#Assessment of high-responders with 3 out of 4 method
+influenza_antibody_results %>% left_join(basecorrect_categories) %>% View()
 

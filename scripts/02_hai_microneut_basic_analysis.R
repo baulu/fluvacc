@@ -23,8 +23,8 @@ library(car)
 microneut_analysis_raw  <- read.xlsx(here::here("processed", "microneut_analysis_raw.xlsx"))
 hai_analysis_raw  <- read.xlsx(here::here("processed", "hai_analysis_raw.xlsx"))
 influenza_antibody_results <- read.xlsx(here::here("processed", "influenza_antibody_results.xlsx"))
-basefile_withPID <- read.xlsx(here::here("processed", "FluVac_basefile_withPID.xlsx"))basecorrect_categories <- read_csv("data/summary_classification.csv")
-basecorrect_categories <- read_csv("data/summary_classification.csv")
+basefile_withPID <- read.xlsx(here::here("processed", "FluVac_basefile_withPID.xlsx"))
+basecorrect_categories <- read_csv(here::here("data/summary_classification.csv"))
 
 # 2) -------------------------------------------------------------------------------------------------------------------
 ### First look at HAI data
@@ -33,6 +33,16 @@ basecorrect_categories <- read_csv("data/summary_classification.csv")
 hai_analysis_raw_p <- hai_analysis_raw %>% 
   select(pat_group, Sampling_number, H1N1, H3N2, BVic, BYam, PID) %>% 
   pivot_longer(cols = 3:6, names_to = "strain", values_to = "result")  
+
+
+hai_analysis_raw_p %>%
+       filter(pat_group == "Control" & strain == "H3N2" & Sampling_number == 1) %>%
+       summarise(
+            n = n(),
+             mean = mean(result, na.rm = TRUE),
+             median = median(result, na.rm = TRUE),
+             min = min(result, na.rm = TRUE),
+             max = max(result, na.rm = TRUE))
 
 plot_hai_h1n1_wide <- hai_analysis_raw_p %>% 
   select(pat_group, strain, Sampling_number, result) %>% 

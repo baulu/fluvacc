@@ -6,6 +6,8 @@
     #3b) Preparation for Heatmap plots in quarto file
     #3c) 
 #....
+# 5) Assessment of high-responders with 3 out of 4 method
+
 
 # 1) -------------------------------------------------------------------------------------------------------------------
 #load libraries
@@ -23,13 +25,15 @@ library(broom)
 library(forcats)
 library(stringr)
 library(readr)
+library(plotly)
 
 #load data
 microneut_analysis_raw  <- read.xlsx(here::here("processed", "microneut_analysis_raw.xlsx"))
-microneut_results_originalcrick <- read_csv("data/final_results_microneut_2025-02-20_FluVacc.csv")
+microneut_results_originalcrick <- read_csv(here::here("data/final_results_microneut_2025-02-20_FluVacc.csv"))
 hai_analysis_raw  <- read.xlsx(here::here("processed", "hai_analysis_raw.xlsx"))
 influenza_antibody_results <- read.xlsx(here::here("processed", "influenza_antibody_results.xlsx"))
 basefile_withPID <- read.xlsx(here::here("processed", "FluVac_basefile_withPID.xlsx"))
+basecorrect_categories <- read_csv(here::here("data/summary_classification.csv"))
 
 # 2) -------------------------------------------------------------------------------------------------------------------
 #### Comparing HAI and Microneutralisation assay
@@ -452,3 +456,110 @@ influenza_folds_Scatter <- influenza_antibody_results %>%
     )
   ) %>% 
   select(Pat_ID, strain, assay,fold_change = value) 
+
+
+# 2) -------------------------------------------------------------------------------------------------------------------
+#### Assessment of high-responders with 3 out of 4 method
+d30cat <- basecorrect_categories %>% 
+  filter(quantile == "d30") %>% 
+  mutate(classification_d30 = case_when(all_high == TRUE & gt_three_high == TRUE ~ "higresponse_4",
+                                        all_high == FALSE & gt_three_high == TRUE ~ "higresponse_3",
+                                        TRUE ~ "Intermediate_low_res")) %>% 
+  select(Pat_ID, classification_d30) %>% 
+  print()
+
+d20cat <- basecorrect_categories %>% 
+  filter(quantile == "d20") %>% 
+  mutate(classification_d20 = case_when(all_high == TRUE & gt_three_high == TRUE ~ "higresponse_4",
+                                        all_high == FALSE & gt_three_high == TRUE ~ "higresponse_3",
+                                        TRUE ~ "Intermediate_low_res")) %>% 
+  select(Pat_ID, classification_d20) %>% 
+  print()
+  
+cat_overall <- d30cat %>% 
+  left_join(d20cat)
+
+# join with titer file
+influenza_folds_categories <- influenza_folds_decline %>% 
+  left_join(cat_overall) %>% 
+  left_join(basefile_withPID %>% select(Pat_ID = patient_id, PID)) %>% 
+  select(Pat_ID, PID, strain, assay, fold_change, classification_d20, classification_d30) %>% 
+  left_join(hai_analysis_raw_p, by = join_by(Pat_ID, strain)) %>% 
+  View()
+
+# Duplicate rows and create a column with 1 and 2 for numbering
+
+hai_analysis_add <- hai_analysis_raw %>% 
+  select(pat_group, Sampling_number, H1 = H1N1, H3 = H3N2, "B/Vic" = BVic, "B/Yam" = BYam, PID) %>% 
+  pivot_longer(cols = 3:6, names_to = "strain", values_to = "result") %>% 
+  filter(Sampling_number == 1)
+
+
+influenza_folds_categories <- influenza_folds_decline %>% 
+  left_join(cat_overall) %>% 
+  left_join(basefile_withPID %>% select(Pat_ID = patient_id, PID)) %>% 
+  filter(assay == "hai") %>% 
+  left_join(hai_analysis_add) %>% 
+  select(Pat_ID, PID, strain, assay, fold_change, baseline_titer = result, classification_d20, classification_d30)
+  
+
+# change file for shiny-app (incl. anonymization)
+influenza_folds_anony <- influenza_folds_categories %>% 
+  select(Pat_ID, strain, assay, fold_change, baseline_titer, classification_d20, classification_d30) %>% 
+  filter(assay == "hai") %>% 
+  mutate(id = dense_rank(Pat_ID)) %>%  # Assign a unique ID to each patient, same ID for the same patient
+  mutate(classification_d20 = case_when(classification_d20 == "higresponse_3" | classification_d20 == "higresponse_4" ~ "Responder",
+                                        TRUE ~ "Non-Responder")) %>% 
+  mutate(classification_d30 = case_when(classification_d30 == "higresponse_3" | classification_d30 == "higresponse_4" ~ "Responder",
+                                        TRUE ~ "Non-Responder"))
+
+influenza_folds_anonymised <- influenza_folds_anony %>% 
+  select(id, strain, assay, fold_change,baseline_titer, classification_d20, classification_d30) %>% 
+  mutate(classification_d20 = case_when(classification_d20 == "higresponse_3" | classification_d20 == "higresponse_4" ~ "Responder",
+                                        TRUE ~ "Non-Responder")) %>% 
+  mutate(classification_d30 = case_when(classification_d30 == "higresponse_3" | classification_d30 == "higresponse_4" ~ "Responder",
+                                       TRUE ~ "Non-Responder"))
+  
+write.xlsx(influenza_folds_anony, file="processed/influenza_folds_fullid.xlsx", overwrite = TRUE, asTable = TRUE)
+write.xlsx(influenza_folds_anonymised, file="processed/influenza_folds_anonymised.xlsx", overwrite = TRUE, asTable = TRUE)
+
+#version with generic iD for anonymisation
+influenza_folds_anonymised %>% 
+  ggplot(aes(x = strain, y = baseline_titer, text = paste("Fold Change:", baseline_titer, "<br>Strain:", strain))) +
+  geom_jitter(size = 3, color = "blue") +  # Adjust dot size and color for baseline
+  facet_wrap(~ assay) +
+  coord_cartesian(ylim = c(0, 450)) +  # Fixed y-axis range from 0 to 45
+  theme_minimal()
+
+#raw sum-FoldChange of responders vs. non-responders
+
+sum_fd <- influenza_folds_anony %>%
+  select(Pat_ID, fold_change) %>%
+  group_by(Pat_ID) %>%
+  summarise(rawsum_fold_change = sum(fold_change, na.rm = TRUE)) %>%
+  ungroup() %>% 
+  print()
+
+influenza_raw_sumfolds <- influenza_folds_anony %>% 
+  select(Pat_ID, classification_d20, classification_d30) %>% 
+  distinct(Pat_ID, .keep_all = TRUE) %>% 
+  left_join(sum_fd)
+
+library(ggpubr)
+
+# Join the datasets
+influenza_raw_sumfolds <- influenza_folds_anony %>% 
+  select(Pat_ID, classification_d20, classification_d30) %>% 
+  distinct(Pat_ID, .keep_all = TRUE) %>% 
+  left_join(sum_fd, by = "Pat_ID")
+
+# Plot with p-value
+ggplot(influenza_raw_sumfolds, aes(x = classification_d30, y = rawsum_fold_change)) +
+  geom_boxplot() +
+  #stat_compare_means(method = "wilcox.test", label = "p.format") +  # or use "t.test"
+  labs(
+    title = "Fold Change by Responder Status (top 30%)",
+    x = "Responder Status",
+    y = "RawSum Fold Change"
+  ) +
+  theme_minimal()

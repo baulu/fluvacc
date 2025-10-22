@@ -193,8 +193,8 @@ PBMC_aliquotNR_min <- biobank_report_sum %>%
   mutate(combined = str_c(n, " (", round(percent, 1), "%)")) %>% 
   select(aliquotsPerVis, combined) %>% 
   pivot_wider(names_from = aliquotsPerVis, values_from = combined) %>% 
-  mutate(Visit_NR = "minimalAliquot (Only Visit 1&3)") %>% 
-  select(Visit_NR, One_Aliquote = `1`, Two_Aliquotes = `2`, Three_Aliquotes = `3`, Four_Aliquotes = `4`) %>% 
+  mutate(Visit_NR = "minimalAliquot (Only Visit 1&3)") %>%
+  select(Visit_NR, One_Aliquote = `1`, Two_Aliquotes = `2`, Three_Aliquotes = `3`) %>% 
   mutate(across(everything(), as.character))  # Convert all variables to character
 
 PBMC_aliquotNR_comb <- PBMC_aliquotNR %>% 
@@ -214,7 +214,7 @@ Serum_aliquotNR <- biobank_report_sum %>%
   mutate(combined = str_c(n, " (", round(percent, 1), "%)")) %>% 
   select(VisitNR, aliquotsPerVis, combined) %>% 
   pivot_wider(names_from = aliquotsPerVis, values_from = combined) %>% 
-  select(Visit_NR = VisitNR, One_Aliquote = "1", Two_Aliquotes = "2", Three_Aliquotes = "3")
+  select(Visit_NR = VisitNR, One_Aliquote = "1", Two_Aliquotes = "2")
 
 write.xlsx(Serum_aliquotNR, file="processed/Serum_aliquotNR.xlsx", overwrite = TRUE, asTable = TRUE)
 
